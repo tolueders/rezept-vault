@@ -1,4 +1,4 @@
-export const APP_NAME = "RezeptVault";
+export const APP_NAME = "MeineRezepte";
 
 export const DIFFICULTY_LABELS = {
   einfach: "Einfach",

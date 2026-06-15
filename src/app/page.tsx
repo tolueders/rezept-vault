@@ -66,7 +66,7 @@ export default async function HomePage() {
             <span className="text-primary">Schön organisiert.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            RezeptVault ist deine persönliche Rezeptsammlung – mit Foto-Digitalisierung,
+            {APP_NAME} ist deine persönliche Rezeptsammlung – mit Foto-Digitalisierung,
             Wochenplanung, Einkaufslisten und optionalen Community-Funktionen.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">

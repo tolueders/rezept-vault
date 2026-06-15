@@ -1,4 +1,4 @@
-const CACHE_NAME = "rezeptvault-v1";
+const CACHE_NAME = "meinerezepte-v1";
 const STATIC_ASSETS = ["/", "/manifest.json", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {

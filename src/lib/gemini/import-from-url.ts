@@ -55,7 +55,7 @@ export async function fetchAndParseRecipeUrl(
   const response = await fetch(parsedUrl.toString(), {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (compatible; RezeptVault/1.0; +https://rezepte-alpha.vercel.app)",
+        "Mozilla/5.0 (compatible; MeineRezepte/1.0; +https://rezepte-alpha.vercel.app)",
       Accept: "text/html,application/xhtml+xml",
     },
     signal: AbortSignal.timeout(15000),

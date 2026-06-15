@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RecipesHomeView } from "@/components/recipes/recipes-home-view";
 import { RecipeSearch } from "@/components/recipes/recipe-search";
-import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
 import { getUserRecipes, getCategories } from "@/lib/queries/recipes";
 import { getDashboardStats } from "@/lib/queries/dashboard";
+import { getCustomCategories } from "@/lib/actions/categories";
 import { RECIPES_PER_PAGE } from "@/lib/constants";
 
 export const metadata = { title: "Meine Rezepte" };
@@ -16,38 +17,43 @@ export default async function RecipesPage({
 }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
-  const [{ recipes, total }, categories, stats] = await Promise.all([
-    getUserRecipes(page),
-    getCategories(),
-    getDashboardStats(),
-  ]);
+  const [{ recipes, total }, categories, customCategories, stats] =
+    await Promise.all([
+      getUserRecipes(page),
+      getCategories(),
+      getCustomCategories(),
+      getDashboardStats(),
+    ]);
 
   const totalPages = Math.ceil(total / RECIPES_PER_PAGE);
 
+  if (page === 1) {
+    return (
+      <RecipesHomeView
+        initialRecipes={recipes}
+        categories={categories}
+        customCategories={customCategories}
+        stats={stats ?? undefined}
+      />
+    );
+  }
+
   return (
     <div>
-      {stats && page === 1 && <DashboardOverview stats={stats} />}
-
-      {page > 1 && (
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">Meine Rezepte</h1>
-            <p className="mt-1 text-muted-foreground">
-              {total} {total === 1 ? "Rezept" : "Rezepte"} in deiner Sammlung
-            </p>
-          </div>
-          <Button asChild className="hidden md:inline-flex">
-            <Link href="/recipes/new">
-              <Plus className="mr-1 h-4 w-4" />
-              Neues Rezept
-            </Link>
-          </Button>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold sm:text-3xl">Meine Rezepte</h1>
+          <p className="mt-1 text-muted-foreground">
+            {total} {total === 1 ? "Rezept" : "Rezepte"} in deiner Sammlung
+          </p>
         </div>
-      )}
-
-      {page === 1 && (
-        <h2 className="mb-4 text-lg font-semibold">Alle Rezepte</h2>
-      )}
+        <Button asChild className="hidden md:inline-flex">
+          <Link href="/recipes/new">
+            <Plus className="mr-1 h-4 w-4" />
+            Neues Rezept
+          </Link>
+        </Button>
+      </div>
 
       <RecipeSearch categories={categories} initialRecipes={recipes} />
 

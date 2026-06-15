@@ -1,6 +1,6 @@
 {
-  "name": "RezeptVault",
-  "short_name": "RezeptVault",
+  "name": "MeineRezepte",
+  "short_name": "MeineRezepte",
   "description": "Deine persönliche Rezeptsammlung",
   "start_url": "/",
   "display": "standalone",

@@ -138,12 +138,41 @@ export async function getUserRecipes(
   return { recipes: data || [], total: count || 0 };
 }
 
-export async function searchRecipes(query: string, categoryId?: string) {
+export async function searchRecipes(query: string, categoryFilter?: string) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return [];
+
+  function applyCategoryFilter<T extends { category_id: string | null; custom_category_id: string | null }>(
+    items: T[]
+  ): T[] {
+    if (!categoryFilter || categoryFilter === "all") return items;
+    if (categoryFilter.startsWith("custom:")) {
+      const id = categoryFilter.slice(7);
+      return items.filter((r) => r.custom_category_id === id);
+    }
+    if (categoryFilter.startsWith("std:")) {
+      const id = categoryFilter.slice(4);
+      return items.filter((r) => r.category_id === id);
+    }
+    return items.filter((r) => r.category_id === categoryFilter);
+  }
+
+  function applyCategoryToQuery(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q: any
+  ) {
+    if (!categoryFilter || categoryFilter === "all") return q;
+    if (categoryFilter.startsWith("custom:")) {
+      return q.eq("custom_category_id", categoryFilter.slice(7));
+    }
+    if (categoryFilter.startsWith("std:")) {
+      return q.eq("category_id", categoryFilter.slice(4));
+    }
+    return q.eq("category_id", categoryFilter);
+  }
 
   const trimmed = query.trim();
 
@@ -154,7 +183,7 @@ export async function searchRecipes(query: string, categoryId?: string) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
-    if (categoryId) q = q.eq("category_id", categoryId);
+    q = applyCategoryToQuery(q);
     const { data } = await q;
     return data || [];
   }
@@ -192,13 +221,9 @@ export async function searchRecipes(query: string, categoryId?: string) {
   }
 
   const combined = [...(recipes || []), ...extraRecipes];
-  let unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
+  const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
 
-  if (categoryId) {
-    unique = unique.filter((r) => r.category_id === categoryId);
-  }
-
-  return unique;
+  return applyCategoryFilter(unique);
 }
 
 export async function getPublicRecipes(
