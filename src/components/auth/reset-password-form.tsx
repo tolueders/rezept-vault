@@ -8,15 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { createClient } from "@/lib/supabase/client";
 import {
   resetPasswordSchema,
@@ -74,66 +67,62 @@ export function ResetPasswordForm() {
 
   if (!ready) {
     return (
-      <div className="auth-page flex min-h-screen items-center justify-center px-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <CardTitle>Link ungültig oder abgelaufen</CardTitle>
-            <CardDescription>
-              Bitte fordere einen neuen Link zum Zurücksetzen an.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Button asChild variant="outline">
-              <Link href="/forgot-password">Neuen Link anfordern</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <AuthShell
+        title="Link ungültig oder abgelaufen"
+        description="Bitte fordere einen neuen Link zum Zurücksetzen an."
+      >
+        <Button asChild variant="outline" size="lg" className="w-full">
+          <Link href="/forgot-password">Neuen Link anfordern</Link>
+        </Button>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="auth-page flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader>
-          <CardTitle>Neues Passwort</CardTitle>
-          <CardDescription>Wähle ein neues Passwort für dein Konto.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Neues Passwort</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm_password">Passwort bestätigen</Label>
-              <Input
-                id="confirm_password"
-                type="password"
-                {...register("confirm_password")}
-              />
-              {errors.confirm_password && (
-                <p className="text-sm text-destructive">
-                  {errors.confirm_password.message}
-                </p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Passwort speichern
-            </Button>
-            <Link href="/login" className="text-sm text-primary hover:underline">
-              <ArrowLeft className="mr-1 inline h-4 w-4" />
-              Zur Anmeldung
-            </Link>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    <AuthShell
+      title="Neues Passwort"
+      description="Wähle ein neues Passwort für dein Konto."
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="form-stack">
+        <FormField
+          label="Neues Passwort"
+          htmlFor="password"
+          error={errors.password?.message}
+        >
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            {...register("password")}
+          />
+        </FormField>
+
+        <FormField
+          label="Passwort bestätigen"
+          htmlFor="confirm_password"
+          error={errors.confirm_password?.message}
+        >
+          <Input
+            id="confirm_password"
+            type="password"
+            autoComplete="new-password"
+            {...register("confirm_password")}
+          />
+        </FormField>
+
+        <Button type="submit" size="lg" className="mt-1 w-full" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Passwort speichern
+        </Button>
+
+        <Link
+          href="/login"
+          className="flex items-center justify-center gap-1 pt-1 text-sm font-medium text-primary hover:underline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Zur Anmeldung
+        </Link>
+      </form>
+    </AuthShell>
   );
 }

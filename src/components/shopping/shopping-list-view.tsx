@@ -117,41 +117,40 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
 
   return (
     <div>
-      <div className="mb-6 space-y-4 sm:mb-8">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Einkaufsliste</h1>
-          <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-            {checkedCount} von {activeList.items.length} erledigt
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 sm:flex-none"
-            onClick={handleShareList}
-            disabled={activeList.items.length === 0}
-          >
-            <Share2 className="mr-1 h-4 w-4" />
-            Teilen
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 sm:flex-none"
-            onClick={handleCreateList}
-            disabled={adding}
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Neue Liste
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 sm:flex-none"
-            onClick={() => handleDeleteList(activeList.id)}
-          >
-            <Trash2 className="mr-1 h-4 w-4" />
-            Löschen
-          </Button>
-        </div>
+      <header className="page-header">
+        <h1 className="page-title">Einkaufsliste</h1>
+        <p className="page-subtitle">
+          {checkedCount} von {activeList.items.length} erledigt
+        </p>
+      </header>
+
+      <div className="mb-6 flex gap-2.5 sm:mb-8">
+        <Button
+          variant="outline"
+          className="flex-1 sm:flex-none"
+          onClick={handleShareList}
+          disabled={activeList.items.length === 0}
+        >
+          <Share2 className="mr-1 h-4 w-4" />
+          Teilen
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1 sm:flex-none"
+          onClick={handleCreateList}
+          disabled={adding}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Neue Liste
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1 sm:flex-none"
+          onClick={() => handleDeleteList(activeList.id)}
+        >
+          <Trash2 className="mr-1 h-4 w-4" />
+          Löschen
+        </Button>
       </div>
 
       {lists.length > 1 && (
@@ -169,7 +168,7 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
         </div>
       )}
 
-      <Card className="border-border/60">
+      <Card className="border-border/50 shadow-sm">
         <CardHeader>
           <CardTitle>{activeList.title}</CardTitle>
         </CardHeader>

@@ -7,15 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { createClient } from "@/lib/supabase/client";
 import {
   forgotPasswordSchema,
@@ -54,57 +47,43 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="auth-page flex min-h-screen items-center justify-center px-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <CardTitle>E-Mail gesendet</CardTitle>
-            <CardDescription>
-              Prüfe dein Postfach für den Link zum Zurücksetzen des Passworts.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Button asChild variant="outline">
-              <Link href="/login">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Zurück zur Anmeldung
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <AuthShell
+        title="E-Mail gesendet"
+        description="Prüfe dein Postfach für den Link zum Zurücksetzen des Passworts."
+      >
+        <Button asChild variant="outline" size="lg" className="w-full">
+          <Link href="/login">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Zurück zur Anmeldung
+          </Link>
+        </Button>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="auth-page flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader>
-          <CardTitle>Passwort vergessen</CardTitle>
-          <CardDescription>
-            Gib deine E-Mail ein und wir senden dir einen Link zum Zurücksetzen.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-Mail</Label>
-              <Input id="email" type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Link senden
-            </Button>
-            <Link href="/login" className="text-sm text-primary hover:underline">
-              Zurück zur Anmeldung
-            </Link>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    <AuthShell
+      title="Passwort vergessen"
+      description="Gib deine E-Mail ein und wir senden dir einen Link zum Zurücksetzen."
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="form-stack">
+        <FormField label="E-Mail" htmlFor="email" error={errors.email?.message}>
+          <Input id="email" type="email" autoComplete="email" {...register("email")} />
+        </FormField>
+
+        <Button type="submit" size="lg" className="mt-1 w-full" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Link senden
+        </Button>
+
+        <Link
+          href="/login"
+          className="flex items-center justify-center gap-1 pt-1 text-sm font-medium text-primary hover:underline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Zurück zur Anmeldung
+        </Link>
+      </form>
+    </AuthShell>
   );
 }

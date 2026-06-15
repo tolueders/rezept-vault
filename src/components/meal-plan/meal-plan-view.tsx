@@ -104,25 +104,25 @@ export function MealPlanView({
 
   return (
     <div>
-      <div className="mb-6 space-y-4 sm:mb-8">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">Wochenplanung</h1>
-            <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-              {formatWeekRange(startDate)}
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-1">
-            <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => navigateWeek(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+      <header className="page-header flex items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Wochenplanung</h1>
+          <p className="page-subtitle">{formatWeekRange(startDate)}</p>
         </div>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => navigateWeek(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="mb-6 sm:mb-8">
         <Button
           className="w-full sm:w-auto"
+          size="lg"
           onClick={handleGenerateList}
           disabled={loading || entries.length === 0}
         >
@@ -139,7 +139,7 @@ export function MealPlanView({
           const dayDate = addDays(startDate, index);
 
           return (
-            <Card key={day} className="w-[82vw] shrink-0 border-border/60 sm:w-[70vw] md:w-auto">
+            <Card key={day} className="w-[82vw] shrink-0 border-border/50 shadow-sm sm:w-[70vw] md:w-auto">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">
                   {day}

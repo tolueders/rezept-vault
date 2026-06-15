@@ -17,7 +17,7 @@ interface RecipeCardProps {
 export function RecipeCard({ recipe }: RecipeCardProps) {
   return (
     <Link href={`/recipes/${recipe.id}`}>
-      <Card className="recipe-card overflow-hidden border-border/60 py-0">
+      <Card className="recipe-card overflow-hidden border-border/50 py-0 shadow-sm">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {recipe.image_url ? (
             <Image
@@ -39,8 +39,8 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             </Badge>
           )}
         </div>
-        <CardContent className="p-4">
-          <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-tight">
+        <CardContent className="p-4 sm:p-5">
+          <h3 className="mb-2.5 line-clamp-2 text-base font-semibold leading-snug sm:text-lg">
             {recipe.title}
           </h3>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">

@@ -73,26 +73,26 @@ export function RecipesHomeView({
     : [];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Filter oben – sticky unter dem Header */}
       <section
         className={cn(
-          "sticky top-14 z-30 -mx-4 border-b border-border/60 bg-background/95 px-4 py-4 backdrop-blur-lg",
-          "md:static md:mx-0 md:rounded-2xl md:border md:bg-card md:px-5 md:py-5 md:shadow-sm"
+          "surface-card sticky top-14 z-30 -mx-4 border-b border-border/40 px-4 py-5 backdrop-blur-lg",
+          "md:static md:mx-0 md:border-0 md:rounded-2xl md:px-6 md:py-6"
         )}
       >
         {stats && (
-          <div className="mb-4 flex items-end justify-between gap-3">
+          <div className="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-primary">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary/80">
                 Willkommen zurück
               </p>
-              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              <h1 className="page-title mt-1">
                 Hallo, {stats.displayName}!
               </h1>
             </div>
-            <span className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
-              {loading ? "…" : `${results.length} ${results.length === 1 ? "Treffer" : "Treffer"}`}
+            <span className="shrink-0 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              {loading ? "…" : `${results.length} Treffer`}
             </span>
           </div>
         )}
@@ -117,8 +117,8 @@ export function RecipesHomeView({
           )}
         </div>
 
-        <div className="mt-4">
-          <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="mt-5">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Kategorie
           </div>
@@ -164,12 +164,12 @@ export function RecipesHomeView({
 
       {/* Kompakte Statistik */}
       {stats && statPills.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {statPills.map((pill) => (
             <Link
               key={pill.href}
               href={pill.href}
-              className="flex min-w-[5.5rem] shrink-0 flex-col items-center rounded-xl border border-border/60 bg-card px-4 py-3 text-center shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/5"
+              className="surface-card flex min-w-[5.5rem] shrink-0 flex-col items-center px-4 py-3.5 text-center transition-colors hover:border-primary/30 hover:bg-primary/5"
             >
               <span className="text-lg font-bold leading-none">{pill.value}</span>
               <span className="mt-1 text-xs text-muted-foreground">{pill.label}</span>

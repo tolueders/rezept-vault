@@ -4,18 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChefHat, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { loginAction } from "@/lib/actions/auth";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { APP_NAME } from "@/lib/constants";
@@ -45,57 +38,50 @@ export function LoginForm() {
   }
 
   return (
-    <div className="auth-page flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md animate-fade-in border-border/60 shadow-lg">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <ChefHat className="h-7 w-7 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">{APP_NAME}</CardTitle>
-          <CardDescription>Melde dich an, um deine Rezepte zu verwalten</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-Mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="deine@email.de"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Passwort</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
-            <Link
-              href="/forgot-password"
-              className="block text-sm text-primary hover:underline"
-            >
-              Passwort vergessen?
-            </Link>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Anmelden
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Noch kein Konto?{" "}
-              <Link href="/register" className="text-primary hover:underline">
-                Registrieren
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    <AuthShell
+      title={APP_NAME}
+      description="Melde dich an, um deine Rezepte zu verwalten"
+      showLogo
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="form-stack">
+        <FormField label="E-Mail" htmlFor="email" error={errors.email?.message}>
+          <Input
+            id="email"
+            type="email"
+            placeholder="deine@email.de"
+            autoComplete="email"
+            {...register("email")}
+          />
+        </FormField>
+
+        <FormField label="Passwort" htmlFor="password" error={errors.password?.message}>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            {...register("password")}
+          />
+        </FormField>
+
+        <Link
+          href="/forgot-password"
+          className="-mt-1 text-sm font-medium text-primary hover:underline"
+        >
+          Passwort vergessen?
+        </Link>
+
+        <Button type="submit" size="lg" className="mt-1 w-full" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Anmelden
+        </Button>
+
+        <p className="pt-1 text-center text-sm text-muted-foreground">
+          Noch kein Konto?{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
+            Registrieren
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

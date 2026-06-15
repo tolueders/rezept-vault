@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, type ProfileFormValues } from "@/lib/validations/auth";
@@ -70,10 +70,13 @@ export function ProfileView({ profile, email, customCategories }: ProfileViewPro
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <h1 className="text-2xl font-bold sm:text-3xl">Profil</h1>
+      <header className="page-header">
+        <h1 className="page-title">Profil</h1>
+        <p className="page-subtitle">Verwalte dein Konto und deine Kategorien</p>
+      </header>
 
-      <Card className="border-border/60">
-        <CardHeader className="items-center text-center">
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="items-center gap-4 pb-2 text-center">
           <div className="relative">
             <Avatar className="h-24 w-24">
               <AvatarImage src={profile.avatar_url || undefined} />
@@ -99,18 +102,16 @@ export function ProfileView({ profile, email, customCategories }: ProfileViewPro
           <CardTitle>{profile.display_name}</CardTitle>
           <p className="text-sm text-muted-foreground">{email}</p>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="display_name">Anzeigename</Label>
+        <CardContent className="pt-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="form-stack">
+            <FormField
+              label="Anzeigename"
+              htmlFor="display_name"
+              error={errors.display_name?.message}
+            >
               <Input id="display_name" {...register("display_name")} />
-              {errors.display_name && (
-                <p className="text-sm text-destructive">
-                  {errors.display_name.message}
-                </p>
-              )}
-            </div>
-            <Button type="submit" disabled={isSubmitting}>
+            </FormField>
+            <Button type="submit" size="lg" disabled={isSubmitting}>
               Speichern
             </Button>
           </form>
@@ -119,7 +120,7 @@ export function ProfileView({ profile, email, customCategories }: ProfileViewPro
 
       <CustomCategoriesSection categories={customCategories} />
 
-      <Button variant="outline" className="w-full" onClick={handleLogout}>
+      <Button variant="outline" size="lg" className="w-full" onClick={handleLogout}>
         Abmelden
       </Button>
     </div>
