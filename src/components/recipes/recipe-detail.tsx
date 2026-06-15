@@ -31,6 +31,7 @@ import {
 } from "@/lib/actions/recipes";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
 import type { RecipeWithDetails } from "@/types/database";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface RecipeDetailProps {
@@ -112,8 +113,15 @@ export function RecipeDetail({
   }
 
   return (
-    <article className="animate-fade-in">
-      <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-2xl bg-muted sm:aspect-[21/9]">
+    <article
+      className={cn(
+        "animate-fade-in md:pb-0",
+        isPublicView
+          ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
+          : "pb-[calc(8rem+env(safe-area-inset-bottom))]"
+      )}
+    >
+      <div className="relative -mx-4 mb-6 aspect-[4/3] overflow-hidden bg-muted sm:mx-0 sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
         {recipe.image_url ? (
           <Image
             src={recipe.image_url}
@@ -142,7 +150,7 @@ export function RecipeDetail({
               </Badge>
             ))}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
             {recipe.title}
           </h1>
           {recipe.description && (
@@ -164,7 +172,7 @@ export function RecipeDetail({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="hidden flex-wrap gap-2 md:flex">
           {!isPublicView && isOwner && (
             <>
               <Button variant="outline" size="sm" asChild>
@@ -207,6 +215,32 @@ export function RecipeDetail({
           </Button>
         </div>
       </div>
+
+      {!isPublicView && isOwner && (
+        <div className="mb-4 flex gap-2 md:hidden">
+          <Button variant="outline" size="sm" className="flex-1" asChild>
+            <Link href={`/recipes/${recipe.id}/edit`}>
+              <Edit className="mr-1 h-4 w-4" />
+              Bearbeiten
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" asChild>
+            <Link href={`/recipes/${recipe.id}/variant`}>Variante</Link>
+          </Button>
+          <Button variant="outline" size="icon" className="shrink-0" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {isPublicView && currentUserId && !isOwner && (
+        <div className="mb-4 md:hidden">
+          <Button className="w-full" onClick={handleCopy}>
+            <Copy className="mr-2 h-4 w-4" />
+            In meine Sammlung übernehmen
+          </Button>
+        </div>
+      )}
 
       <div className="mb-6 flex items-center gap-4">
         <StarRating
@@ -265,6 +299,42 @@ export function RecipeDetail({
           Öffentliche URL: /recipe/{recipe.slug}
         </div>
       )}
+
+      <div
+        className={cn(
+          "fixed inset-x-0 z-40 flex items-center gap-2 border-t border-border/60 bg-background/95 p-3 backdrop-blur-lg md:hidden",
+          isPublicView
+            ? "bottom-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+            : "bottom-[calc(4rem+env(safe-area-inset-bottom))]"
+        )}
+      >
+        <Button className="h-11 flex-1" onClick={() => setCookMode(true)}>
+          <ChefHat className="mr-2 h-4 w-4" />
+          Kochmodus
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-11 w-11 shrink-0"
+          onClick={handleShare}
+          aria-label="Teilen"
+        >
+          <Share2 className="h-4 w-4" />
+        </Button>
+        {currentUserId && !isPublicView && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            onClick={handleFavorite}
+            aria-label="Favorit"
+          >
+            <Heart
+              className={cn("h-4 w-4", favorited && "fill-primary text-primary")}
+            />
+          </Button>
+        )}
+      </div>
     </article>
   );
 }

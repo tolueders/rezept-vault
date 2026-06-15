@@ -54,7 +54,7 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="auth-page flex min-h-screen items-center justify-center px-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>E-Mail gesendet</CardTitle>
@@ -76,7 +76,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="auth-page flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader>
           <CardTitle>Passwort vergessen</CardTitle>

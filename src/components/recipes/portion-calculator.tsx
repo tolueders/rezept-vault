@@ -25,16 +25,16 @@ export function PortionCalculator({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-10 w-10"
           onClick={() => setServings(Math.max(1, servings - 1))}
         >
           <Minus className="h-4 w-4" />
         </Button>
-        <span className="w-8 text-center font-semibold">{servings}</span>
+        <span className="w-10 text-center text-lg font-semibold">{servings}</span>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-10 w-10"
           onClick={() => setServings(servings + 1)}
         >
           <Plus className="h-4 w-4" />

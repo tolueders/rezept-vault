@@ -45,3 +45,12 @@ export const NAV_ITEMS = [
   { href: "/shopping-list", label: "Einkaufsliste", icon: "ShoppingCart" },
   { href: "/profile", label: "Profil", icon: "User" },
 ] as const;
+
+/** Mobile Bottom-Navigation (max. 5 Tabs) */
+export const MOBILE_NAV_ITEMS = [
+  { href: "/recipes", label: "Rezepte", icon: "BookOpen" },
+  { href: "/discover", label: "Entdecken", icon: "Compass" },
+  { href: "/meal-plan", label: "Plan", icon: "Calendar" },
+  { href: "/shopping-list", label: "Einkauf", icon: "ShoppingCart" },
+  { href: "/profile", label: "Profil", icon: "User" },
+] as const;

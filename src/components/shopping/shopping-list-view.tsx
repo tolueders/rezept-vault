@@ -102,21 +102,26 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 space-y-4 sm:mb-8">
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">Einkaufsliste</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground sm:text-base">
             {checkedCount} von {activeList.items.length} erledigt
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCreateList} disabled={adding}>
+          <Button
+            variant="outline"
+            className="flex-1 sm:flex-none"
+            onClick={handleCreateList}
+            disabled={adding}
+          >
             <Plus className="mr-1 h-4 w-4" />
             Neue Liste
           </Button>
           <Button
             variant="outline"
-            size="sm"
+            className="flex-1 sm:flex-none"
             onClick={() => handleDeleteList(activeList.id)}
           >
             <Trash2 className="mr-1 h-4 w-4" />
@@ -155,27 +160,29 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
               .map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-2 rounded-lg px-3 py-3 hover:bg-secondary/50"
+                  className="flex min-h-12 items-center gap-2 rounded-lg px-2 py-2 sm:px-3 sm:py-3"
                 >
                   <Checkbox
                     checked={item.checked}
                     onCheckedChange={(checked) =>
                       handleToggle(item.id, checked === true)
                     }
+                    className="h-5 w-5"
                   />
-                  <label className="flex flex-1 cursor-pointer items-center gap-3">
+                  <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-3 py-1">
                     <span
-                      className={`flex-1 ${item.checked ? "text-muted-foreground line-through" : ""}`}
+                      className={`flex-1 text-base ${item.checked ? "text-muted-foreground line-through" : ""}`}
                     >
                       {item.name}
                     </span>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="shrink-0 text-sm text-muted-foreground">
                       {formatAmount(item.amount, item.unit)}
                     </span>
                   </label>
                   <button
                     onClick={() => handleRemoveItem(item.id)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground"
+                    aria-label="Entfernen"
                   >
                     <X className="h-4 w-4" />
                   </button>

@@ -66,8 +66,14 @@ export function CookMode({
   const step = sortedSteps[currentStep];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <div className="flex items-center justify-between border-b border-border px-4 py-4">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-background"
+      style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex-1 text-center">
           <p className="text-sm text-muted-foreground">{title}</p>
           <p className="text-sm font-medium">
@@ -109,14 +115,14 @@ export function CookMode({
         </div>
       )}
 
-      <div className="flex flex-1 flex-col items-center justify-center px-6">
-        <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6">
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground sm:mb-8 sm:h-16 sm:w-16 sm:text-2xl">
           {currentStep + 1}
         </div>
         <p className="cook-mode-text max-w-2xl text-center">{step?.instruction}</p>
       </div>
 
-      <div className="flex gap-4 border-t border-border p-4">
+      <div className="flex gap-3 border-t border-border p-3 sm:gap-4 sm:p-4">
         <Button
           variant="outline"
           className="h-14 flex-1 text-lg"

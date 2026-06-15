@@ -45,7 +45,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="auth-page flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md animate-fade-in border-border/60 shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">

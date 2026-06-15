@@ -32,7 +32,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
             Was möchtest du heute kochen?
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="hidden md:inline-flex">
           <Link href="/recipes/new">
             <Plus className="mr-1 h-4 w-4" />
             Neues Rezept

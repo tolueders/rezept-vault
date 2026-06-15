@@ -74,7 +74,7 @@ export function ResetPasswordForm() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="auth-page flex min-h-screen items-center justify-center px-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>Link ungültig oder abgelaufen</CardTitle>
@@ -93,7 +93,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="auth-page flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader>
           <CardTitle>Neues Passwort</CardTitle>

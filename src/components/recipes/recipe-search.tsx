@@ -47,12 +47,12 @@ export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchPr
   }, [query, categoryId, doSearch]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Rezepte, Zutaten oder Tags suchen…"
+            placeholder="Rezepte suchen…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10 pr-10"
@@ -60,7 +60,8 @@ export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchPr
           {query && (
             <button
               onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground"
+              aria-label="Suche löschen"
             >
               <X className="h-4 w-4" />
             </button>
@@ -82,7 +83,7 @@ export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchPr
       </div>
 
       {loading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
           ))}
@@ -94,7 +95,7 @@ export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchPr
             : "Noch keine Rezepte vorhanden"}
         </p>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {results.map((recipe) => (
             <RecipeCard key={recipe.id} recipe={recipe} />
           ))}

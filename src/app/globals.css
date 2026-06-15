@@ -60,6 +60,54 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Platz für Bottom-Navigation auf Mobile */
+.app-main {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .app-main {
+    padding-bottom: 2rem;
+  }
+}
+
+/* Touch-freundliche Formularelemente */
+@media (max-width: 767px) {
+  [data-slot="input"],
+  [data-slot="textarea"],
+  select {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  [data-slot="button"]:not([data-size="icon"]):not([data-size="icon-sm"]) {
+    min-height: 2.75rem;
+  }
+}
+
+.recipe-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (hover: hover) {
+  .recipe-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(61, 44, 30, 0.08);
+  }
+}
+
+/* Horizontaler Wochenplan auf Mobile */
+.meal-plan-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.meal-plan-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes fade-in {
@@ -80,16 +128,12 @@ body {
   animation: slide-up 0.5s ease-out forwards;
 }
 
-.recipe-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.recipe-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(61, 44, 30, 0.08);
-}
-
 .cook-mode-text {
   font-size: clamp(1.25rem, 4vw, 2rem);
   line-height: 1.6;
+}
+
+.auth-page {
+  padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
 }

@@ -104,28 +104,34 @@ export function MealPlanView({
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Wochenplanung</h1>
-          <p className="mt-1 text-muted-foreground">
-            {formatWeekRange(startDate)}
-          </p>
+      <div className="mb-6 space-y-4 sm:mb-8">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold sm:text-3xl">Wochenplanung</h1>
+            <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+              {formatWeekRange(startDate)}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => navigateWeek(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => navigateWeek(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button onClick={handleGenerateList} disabled={loading || entries.length === 0}>
-            <ShoppingCart className="mr-1 h-4 w-4" />
-            Einkaufsliste
-          </Button>
-        </div>
+        <Button
+          className="w-full sm:w-auto"
+          onClick={handleGenerateList}
+          disabled={loading || entries.length === 0}
+        >
+          <ShoppingCart className="mr-1 h-4 w-4" />
+          Einkaufsliste erstellen
+        </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="meal-plan-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3 xl:grid-cols-4">
         {WEEKDAYS.map((day, index) => {
           const dayEntries = sortEntries(
             entries.filter((e) => e.day_of_week === index)
@@ -133,7 +139,7 @@ export function MealPlanView({
           const dayDate = addDays(startDate, index);
 
           return (
-            <Card key={day} className="border-border/60">
+            <Card key={day} className="w-[82vw] shrink-0 border-border/60 sm:w-[70vw] md:w-auto">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">
                   {day}

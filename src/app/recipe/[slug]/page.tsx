@@ -34,8 +34,11 @@ export default async function PublicRecipePage({
   const comments = await getRecipeComments(recipe.id);
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <div
+      className="min-h-screen bg-background"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
+      <main className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-8">
         <RecipeDetail
           recipe={recipe}
           comments={comments}
