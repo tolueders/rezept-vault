@@ -1,0 +1,262 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import {
+  Clock,
+  Copy,
+  Edit,
+  ExternalLink,
+  Heart,
+  Share2,
+  Trash2,
+  Users,
+  ChefHat,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { StarRating } from "@/components/recipes/star-rating";
+import { PortionCalculator } from "@/components/recipes/portion-calculator";
+import { CommentsSection } from "@/components/recipes/comments-section";
+import { CookMode } from "@/components/recipes/cook-mode";
+import {
+  toggleFavorite,
+  rateRecipe,
+  deleteRecipe,
+  copyRecipeToCollection,
+} from "@/lib/actions/recipes";
+import { DIFFICULTY_LABELS } from "@/lib/constants";
+import type { RecipeWithDetails } from "@/types/database";
+import { toast } from "sonner";
+
+interface RecipeDetailProps {
+  recipe: RecipeWithDetails;
+  comments: Parameters<typeof CommentsSection>[0]["comments"];
+  currentUserId?: string;
+  isOwner: boolean;
+  isPublicView?: boolean;
+}
+
+export function RecipeDetail({
+  recipe,
+  comments,
+  currentUserId,
+  isOwner,
+  isPublicView = false,
+}: RecipeDetailProps) {
+  const router = useRouter();
+  const [favorited, setFavorited] = useState(recipe.is_favorited || false);
+  const [userRating, setUserRating] = useState(recipe.user_rating || 0);
+  const [cookMode, setCookMode] = useState(false);
+
+  async function handleFavorite() {
+    if (!currentUserId) {
+      toast.error("Bitte melde dich an");
+      return;
+    }
+    const result = await toggleFavorite(recipe.id);
+    setFavorited(result.favorited);
+    toast.success(result.favorited ? "Zu Favoriten hinzugefügt" : "Aus Favoriten entfernt");
+  }
+
+  async function handleRate(rating: number) {
+    if (!currentUserId) {
+      toast.error("Bitte melde dich an");
+      return;
+    }
+    await rateRecipe(recipe.id, rating);
+    setUserRating(rating);
+    toast.success("Bewertung gespeichert");
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!confirm("Rezept wirklich löschen?")) return;
+    await deleteRecipe(recipe.id);
+    toast.success("Rezept gelöscht");
+    router.push("/recipes");
+  }
+
+  async function handleCopy() {
+    if (!currentUserId) {
+      toast.error("Bitte melde dich an");
+      return;
+    }
+    const copy = await copyRecipeToCollection(recipe.id);
+    toast.success("Rezept übernommen!");
+    router.push(`/recipes/${copy.id}`);
+  }
+
+  async function handleShare() {
+    const url = `${window.location.origin}/recipe/${recipe.slug}`;
+    await navigator.clipboard.writeText(url);
+    toast.success("Link kopiert!");
+  }
+
+  if (cookMode) {
+    return (
+      <CookMode
+        steps={recipe.steps}
+        title={recipe.title}
+      />
+    );
+  }
+
+  return (
+    <article className="animate-fade-in">
+      <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-2xl bg-muted sm:aspect-[21/9]">
+        {recipe.image_url ? (
+          <Image
+            src={recipe.image_url}
+            alt={recipe.title}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            Kein Bild
+          </div>
+        )}
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="mb-2 flex flex-wrap gap-2">
+            {recipe.category && (
+              <Badge variant="secondary">{recipe.category.name}</Badge>
+            )}
+            {recipe.tags?.map((tag) => (
+              <Badge key={tag.id} variant="outline">
+                {tag.tag}
+              </Badge>
+            ))}
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {recipe.title}
+          </h1>
+          {recipe.description && (
+            <p className="mt-2 text-muted-foreground">{recipe.description}</p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              {recipe.cook_time_minutes} Min.
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              {recipe.servings} Portionen
+            </span>
+            <span>{DIFFICULTY_LABELS[recipe.difficulty]}</span>
+            {recipe.author && (
+              <span>von {recipe.author.display_name}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {!isPublicView && isOwner && (
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/recipes/${recipe.id}/variant`}>
+                  Variante
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/recipes/${recipe.id}/edit`}>
+                  <Edit className="mr-1 h-4 w-4" />
+                  Bearbeiten
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDelete}>
+                <Trash2 className="mr-1 h-4 w-4" />
+                Löschen
+              </Button>
+            </>
+          )}
+          {isPublicView && currentUserId && !isOwner && (
+            <Button size="sm" onClick={handleCopy}>
+              <Copy className="mr-1 h-4 w-4" />
+              In meine Sammlung übernehmen
+            </Button>
+          )}
+          {currentUserId && !isPublicView && (
+            <Button variant="outline" size="icon" onClick={handleFavorite}>
+              <Heart
+                className={`h-4 w-4 ${favorited ? "fill-primary text-primary" : ""}`}
+              />
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleShare}>
+            <Share2 className="mr-1 h-4 w-4" />
+            Teilen
+          </Button>
+          {!isPublicView && (
+            <Button size="sm" onClick={() => setCookMode(true)}>
+              <ChefHat className="mr-1 h-4 w-4" />
+              Kochmodus
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-6 flex items-center gap-4">
+        <StarRating
+          value={userRating || Math.round(recipe.average_rating)}
+          onChange={handleRate}
+          readonly={!currentUserId}
+        />
+        <span className="text-sm text-muted-foreground">
+          {recipe.average_rating > 0
+            ? `${recipe.average_rating.toFixed(1)} (${recipe.rating_count} Bewertungen)`
+            : "Noch keine Bewertungen"}
+        </span>
+      </div>
+
+      <Separator className="my-8" />
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section>
+          <h2 className="mb-4 text-xl font-semibold">Zutaten</h2>
+          <PortionCalculator
+            ingredients={recipe.ingredients}
+            originalServings={recipe.servings}
+          />
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-xl font-semibold">Zubereitung</h2>
+          <ol className="space-y-4">
+            {recipe.steps.map((step, i) => (
+              <li key={step.id} className="flex gap-4">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {i + 1}
+                </span>
+                <p className="pt-1">{step.instruction}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+
+      <Separator className="my-8" />
+
+      <CommentsSection
+        recipeId={recipe.id}
+        comments={comments}
+        currentUserId={currentUserId}
+      />
+
+      {recipe.is_public && (
+        <div className="mt-8 rounded-xl bg-secondary/50 p-4 text-center text-sm text-muted-foreground">
+          <ExternalLink className="mx-auto mb-2 h-5 w-5" />
+          Öffentliche URL: /recipe/{recipe.slug}
+        </div>
+      )}
+    </article>
+  );
+}
