@@ -19,5 +19,12 @@ export default async function CookModePage({
   const recipe = await getRecipeById(id);
   if (!recipe || recipe.user_id !== user.id) notFound();
 
-  return <CookModeRedirect steps={recipe.steps} title={recipe.title} />;
+  return (
+    <CookModeRedirect
+      steps={recipe.steps}
+      ingredients={recipe.ingredients}
+      servings={recipe.servings}
+      title={recipe.title}
+    />
+  );
 }

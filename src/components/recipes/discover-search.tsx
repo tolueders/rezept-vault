@@ -11,33 +11,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RecipeCard } from "@/components/recipes/recipe-card";
-import { searchRecipesAction } from "@/lib/actions/recipes";
+import { PublicRecipeCard } from "@/components/recipes/public-recipe-card";
+import { searchPublicRecipesAction } from "@/lib/actions/recipes";
 import type { RecipeCategory } from "@/types/database";
 
-interface RecipeSearchProps {
+interface DiscoverSearchProps {
   categories: RecipeCategory[];
-  initialRecipes?: Parameters<typeof RecipeCard>[0]["recipe"][];
+  initialRecipes: Parameters<typeof PublicRecipeCard>[0]["recipe"][];
 }
 
-export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchProps) {
+export function DiscoverSearch({
+  categories,
+  initialRecipes,
+}: DiscoverSearchProps) {
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");
   const [results, setResults] = useState(initialRecipes);
   const [loading, setLoading] = useState(false);
 
-  const doSearch = useCallback(async (q: string, cat: string) => {
-    setLoading(true);
-    try {
-      const data = await searchRecipesAction(
-        q,
-        cat === "all" ? undefined : cat
-      );
-      setResults(data);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const doSearch = useCallback(
+    async (q: string, cat: string) => {
+      setLoading(true);
+      try {
+        const data = await searchPublicRecipesAction(
+          q,
+          cat === "all" ? undefined : cat
+        );
+        setResults(data);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,7 +58,7 @@ export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchPr
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Rezepte, Zutaten oder Tags suchen…"
+            placeholder="Rezepte oder Tags suchen…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10 pr-10"
@@ -90,13 +96,13 @@ export function RecipeSearch({ categories, initialRecipes = [] }: RecipeSearchPr
       ) : results.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">
           {query || categoryId !== "all"
-            ? "Keine Rezepte gefunden"
-            : "Noch keine Rezepte vorhanden"}
+            ? "Keine öffentlichen Rezepte gefunden"
+            : "Noch keine öffentlichen Rezepte vorhanden"}
         </p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <PublicRecipeCard key={recipe.id} recipe={recipe} />
           ))}
         </div>
       )}

@@ -21,6 +21,16 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email("Bitte gib eine gültige E-Mail-Adresse ein"),
 });
 
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(6, "Passwort muss mindestens 6 Zeichen haben"),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: "Passwörter stimmen nicht überein",
+    path: ["confirm_password"],
+  });
+
 export const profileSchema = z.object({
   display_name: z.string().min(2, "Name muss mindestens 2 Zeichen haben"),
 });
@@ -55,5 +65,6 @@ export const commentSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 export type RecipeFormValues = z.infer<typeof recipeSchema>;
 export type ProfileFormValues = z.infer<typeof profileSchema>;

@@ -402,6 +402,14 @@ export async function searchRecipesAction(query: string, categoryId?: string) {
   return searchRecipes(query, categoryId);
 }
 
+export async function searchPublicRecipesAction(
+  query: string,
+  categoryId?: string
+) {
+  const { searchPublicRecipes } = await import("@/lib/queries/recipes");
+  return searchPublicRecipes(query, categoryId);
+}
+
 export async function setPreferredVariant(variantId: string, originalId: string) {
   const supabase = await createClient();
   const {

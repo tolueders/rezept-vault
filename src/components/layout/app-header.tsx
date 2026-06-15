@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpen,
   Calendar,
+  Compass,
   Heart,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 
 const iconMap = {
   BookOpen,
+  Compass,
   Heart,
   Calendar,
   ShoppingCart,

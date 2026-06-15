@@ -22,6 +22,7 @@ import { StarRating } from "@/components/recipes/star-rating";
 import { PortionCalculator } from "@/components/recipes/portion-calculator";
 import { CommentsSection } from "@/components/recipes/comments-section";
 import { CookMode } from "@/components/recipes/cook-mode";
+import { RecipeVariants } from "@/components/recipes/recipe-variants";
 import {
   toggleFavorite,
   rateRecipe,
@@ -38,6 +39,7 @@ interface RecipeDetailProps {
   currentUserId?: string;
   isOwner: boolean;
   isPublicView?: boolean;
+  variants?: Parameters<typeof RecipeVariants>[0]["variants"];
 }
 
 export function RecipeDetail({
@@ -46,6 +48,7 @@ export function RecipeDetail({
   currentUserId,
   isOwner,
   isPublicView = false,
+  variants = [],
 }: RecipeDetailProps) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(recipe.is_favorited || false);
@@ -100,7 +103,10 @@ export function RecipeDetail({
     return (
       <CookMode
         steps={recipe.steps}
+        ingredients={recipe.ingredients}
+        servings={recipe.servings}
         title={recipe.title}
+        onClose={() => setCookMode(false)}
       />
     );
   }
@@ -195,12 +201,10 @@ export function RecipeDetail({
             <Share2 className="mr-1 h-4 w-4" />
             Teilen
           </Button>
-          {!isPublicView && (
-            <Button size="sm" onClick={() => setCookMode(true)}>
-              <ChefHat className="mr-1 h-4 w-4" />
-              Kochmodus
-            </Button>
-          )}
+          <Button size="sm" onClick={() => setCookMode(true)}>
+            <ChefHat className="mr-1 h-4 w-4" />
+            Kochmodus
+          </Button>
         </div>
       </div>
 
@@ -218,6 +222,10 @@ export function RecipeDetail({
       </div>
 
       <Separator className="my-8" />
+
+      {!isPublicView && isOwner && (
+        <RecipeVariants variants={variants} originalId={recipe.id} />
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section>

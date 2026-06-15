@@ -3,6 +3,7 @@ import { RecipeDetail } from "@/components/recipes/recipe-detail";
 import {
   getRecipeById,
   getRecipeComments,
+  getRecipeVariants,
 } from "@/lib/queries/recipes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,9 +28,10 @@ export default async function RecipeDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [recipe, comments] = await Promise.all([
+  const [recipe, comments, variants] = await Promise.all([
     getRecipeById(id),
     getRecipeComments(id),
+    user ? getRecipeVariants(id) : Promise.resolve([]),
   ]);
 
   if (!recipe) notFound();
@@ -40,6 +42,7 @@ export default async function RecipeDetailPage({
       comments={comments}
       currentUserId={user?.id}
       isOwner={user?.id === recipe.user_id}
+      variants={variants}
     />
   );
 }

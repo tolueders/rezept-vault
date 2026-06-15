@@ -32,6 +32,7 @@ export const STORAGE_BUCKETS = {
 
 export const NAV_ITEMS = [
   { href: "/recipes", label: "Meine Rezepte", icon: "BookOpen" },
+  { href: "/discover", label: "Entdecken", icon: "Compass" },
   { href: "/favorites", label: "Favoriten", icon: "Heart" },
   { href: "/meal-plan", label: "Wochenplanung", icon: "Calendar" },
   { href: "/shopping-list", label: "Einkaufsliste", icon: "ShoppingCart" },

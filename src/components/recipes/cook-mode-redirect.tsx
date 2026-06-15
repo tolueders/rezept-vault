@@ -1,13 +1,27 @@
 "use client";
 
 import { CookMode } from "@/components/recipes/cook-mode";
-import type { RecipeStep } from "@/types/database";
+import type { RecipeIngredient, RecipeStep } from "@/types/database";
 
 interface CookModeRedirectProps {
   steps: RecipeStep[];
+  ingredients: RecipeIngredient[];
+  servings: number;
   title: string;
 }
 
-export function CookModeRedirect({ steps, title }: CookModeRedirectProps) {
-  return <CookMode steps={steps} title={title} />;
+export function CookModeRedirect({
+  steps,
+  ingredients,
+  servings,
+  title,
+}: CookModeRedirectProps) {
+  return (
+    <CookMode
+      steps={steps}
+      ingredients={ingredients}
+      servings={servings}
+      title={title}
+    />
+  );
 }
