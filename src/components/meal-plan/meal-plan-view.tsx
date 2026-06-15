@@ -131,7 +131,7 @@ export function MealPlanView({
         </Button>
       </div>
 
-      <div className="meal-plan-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="meal-plan-scroll flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:pb-0 lg:grid-cols-3 xl:grid-cols-4">
         {WEEKDAYS.map((day, index) => {
           const dayEntries = sortEntries(
             entries.filter((e) => e.day_of_week === index)

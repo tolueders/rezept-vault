@@ -36,7 +36,7 @@ export default async function RecipesPage({
               {total} {total === 1 ? "Rezept" : "Rezepte"} in deiner Sammlung
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="hidden md:inline-flex">
             <Link href="/recipes/new">
               <Plus className="mr-1 h-4 w-4" />
               Neues Rezept

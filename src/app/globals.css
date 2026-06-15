@@ -64,9 +64,9 @@ body {
   touch-action: manipulation;
 }
 
-/* Platz für Bottom-Navigation auf Mobile */
+/* Platz für Bottom-Navigation auf Mobile (h-16 = 4rem) */
 .app-main {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
@@ -75,17 +75,13 @@ body {
   }
 }
 
-/* Touch-freundliche Formularelemente */
+/* Touch-freundliche Formularelemente (verhindert iOS-Zoom beim Fokus) */
 @media (max-width: 767px) {
   [data-slot="input"],
   [data-slot="textarea"],
   select {
     min-height: 2.75rem;
     font-size: 1rem;
-  }
-
-  [data-slot="button"]:not([data-size="icon"]):not([data-size="icon-sm"]) {
-    min-height: 2.75rem;
   }
 }
 

@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="app-main mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-8">
+      <main className="app-main mx-auto max-w-7xl overflow-x-hidden px-4 py-4 sm:px-6 sm:py-8">
         {children}
       </main>
       <MobileFab />

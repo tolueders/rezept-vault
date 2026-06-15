@@ -118,10 +118,10 @@ export function RecipeDetail({
         "animate-fade-in md:pb-0",
         isPublicView
           ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
-          : "pb-[calc(8rem+env(safe-area-inset-bottom))]"
+          : "pb-[calc(3.75rem+env(safe-area-inset-bottom))]"
       )}
     >
-      <div className="relative -mx-4 mb-6 aspect-[4/3] overflow-hidden bg-muted sm:mx-0 sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
+      <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
         {recipe.image_url ? (
           <Image
             src={recipe.image_url}

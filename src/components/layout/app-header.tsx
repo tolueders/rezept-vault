@@ -48,7 +48,7 @@ export function AppHeader() {
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <ChefHat className="h-5 w-5 text-primary" />
           </div>
-          <span className="truncate text-lg font-semibold tracking-tight md:block">
+          <span className="min-w-0 truncate text-lg font-semibold tracking-tight">
             {APP_NAME}
           </span>
         </Link>
