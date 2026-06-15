@@ -40,13 +40,20 @@ function hasPlaceholder(value) {
 }
 
 async function testSupabase(url, key) {
-  const res = await fetch(`${url}/rest/v1/recipe_categories?select=name&limit=1`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-    },
-  });
-  return { ok: res.ok, status: res.status, body: res.ok ? await res.json() : await res.text() };
+  const res = await fetch(
+    `${url}/rest/v1/recipe_categories?select=id&limit=1`,
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Prefer: "count=exact",
+      },
+    }
+  );
+  const countHeader = res.headers.get("content-range");
+  const count = countHeader?.match(/\/(\d+)$/)?.[1];
+  const body = res.ok ? await res.json() : await res.text();
+  return { ok: res.ok, status: res.status, body, count: count ? Number(count) : null };
 }
 
 async function main() {
@@ -88,16 +95,14 @@ async function main() {
     try {
       const result = await testSupabase(url, anonKey);
       if (result.ok) {
-        const categories = result.body;
-        if (Array.isArray(categories) && categories.length > 0) {
-          console.log(`✅ Supabase verbunden – ${categories.length} Kategorie(n) gefunden`);
+        const total = result.count ?? (Array.isArray(result.body) ? result.body.length : 0);
+        if (total > 0) {
+          console.log(`✅ Supabase verbunden – ${total} Kategorien gefunden`);
           console.log("   Migrationen wurden erfolgreich ausgeführt.\n");
-        } else if (Array.isArray(categories) && categories.length === 0) {
+        } else {
           console.log("⚠️  Supabase verbunden, aber keine Kategorien gefunden.");
           console.log("   → Führe supabase/combined_migration.sql im SQL Editor aus.\n");
           allGood = false;
-        } else {
-          console.log("✅ Supabase erreichbar\n");
         }
       } else if (result.status === 404 || String(result.body).includes("relation")) {
         console.log("⚠️  Supabase erreichbar, aber Tabellen fehlen.");
