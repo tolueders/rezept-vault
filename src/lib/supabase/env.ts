@@ -19,7 +19,7 @@ export function requireSupabaseEnv(): { url: string; anonKey: string } {
 
   if (!url || !anonKey) {
     throw new Error(
-      "Supabase URL und Anon Key fehlen. Setze NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel (nicht als Sensitive markieren)."
+      "Supabase URL und Anon Key fehlen. Setze SUPABASE_URL und SUPABASE_ANON_KEY in Vercel (oder NEXT_PUBLIC_* lokal)."
     );
   }
 

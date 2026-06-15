@@ -12,6 +12,7 @@
     "setup:env": "node scripts/configure-env.mjs",
     "db:migrate": "node scripts/run-migration.mjs",
     "setup:production": "node scripts/setup-production.mjs",
+    "vercel:env": "node scripts/setup-vercel-env.mjs",
     "db:combine": "cat supabase/migrations/001_initial_schema.sql supabase/migrations/002_rls_policies.sql supabase/migrations/003_storage.sql > supabase/combined_migration.sql",
     "supabase:link": "npx supabase link",
     "supabase:push": "npx supabase db push"

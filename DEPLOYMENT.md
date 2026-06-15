@@ -14,14 +14,39 @@
 
 ## 2. Umgebungsvariablen
 
-Unter **Settings → Environment Variables**:
+### Option A – Vercel UI (einfach)
+
+Unter **Settings → Environment Variables** diese **3 Variablen** anlegen (ohne `NEXT_PUBLIC_`):
+
+| Variable | Wert | Sensitive |
+|----------|------|-----------|
+| `SUPABASE_URL` | `https://xxx.supabase.co` | ✅ darf an |
+| `SUPABASE_ANON_KEY` | Supabase anon Key | ✅ darf an |
+| `NEXT_PUBLIC_APP_URL` | `https://rezepte-alpha.vercel.app` | nein |
+| `GEMINI_API_KEY` | Google Gemini API Key | ✅ optional |
+
+**Wichtig:** `NEXT_PUBLIC_SUPABASE_*` **nicht** als Sensitive markieren – das bricht den Next.js-Build. Stattdessen `SUPABASE_URL` und `SUPABASE_ANON_KEY` verwenden (werden in `next.config.ts` automatisch ins Frontend übernommen).
+
+Environments: **Production**, **Preview**, **Development** alle ankreuzen.
+
+### Option B – Vercel CLI (wenn UI hängt)
+
+```bash
+npx vercel login
+npx vercel link          # Projekt "rezepte-alpha" wählen
+npm run vercel:env       # liest Werte aus .env.local
+```
+
+Danach in Vercel: **Deployments → … → Redeploy** (Build Cache deaktivieren).
+
+### Lokal (.env.local)
 
 | Variable | Wert |
 |----------|------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon Key |
 | `GEMINI_API_KEY` | Google Gemini API Key |
-| `NEXT_PUBLIC_APP_URL` | `https://deine-app.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` |
 
 ## 3. Supabase Auth URLs aktualisieren
 
@@ -68,6 +93,8 @@ Teste die Installation auf:
 
 | Problem | Lösung |
 |---------|--------|
+| Env vars lassen sich nicht speichern | `SUPABASE_URL` + `SUPABASE_ANON_KEY` statt `NEXT_PUBLIC_*` verwenden, oder `npm run vercel:env` |
+| 500 / Supabase URL fehlt | Env vars setzen + Redeploy ohne Cache |
 | Auth Redirect Loop | Supabase Site URL prüfen |
 | Bilder laden nicht | `next.config.ts` remotePatterns + Storage Bucket public |
 | 500 bei Foto-Analyse | `GEMINI_API_KEY` in Vercel Env prüfen |
