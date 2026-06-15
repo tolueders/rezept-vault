@@ -5,7 +5,7 @@ import { RecipesHomeView } from "@/components/recipes/recipes-home-view";
 import { RecipeSearch } from "@/components/recipes/recipe-search";
 import { getUserRecipes, getCategories } from "@/lib/queries/recipes";
 import { getDashboardStats } from "@/lib/queries/dashboard";
-import { getCustomCategories } from "@/lib/actions/categories";
+import { getCustomCategories } from "@/lib/queries/categories";
 import { RECIPES_PER_PAGE } from "@/lib/constants";
 
 export const metadata = { title: "Meine Rezepte" };

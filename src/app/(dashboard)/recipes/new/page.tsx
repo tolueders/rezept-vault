@@ -1,6 +1,6 @@
 import { RecipeForm } from "@/components/recipes/recipe-form";
 import { getCategories } from "@/lib/queries/recipes";
-import { getCustomCategories } from "@/lib/actions/categories";
+import { getCustomCategories } from "@/lib/queries/categories";
 
 export const metadata = { title: "Neues Rezept" };
 

@@ -13,19 +13,6 @@ async function requireUser() {
   return { supabase, user };
 }
 
-export async function getCustomCategories() {
-  const { supabase, user } = await requireUser();
-
-  const { data, error } = await supabase
-    .from("custom_categories")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("name");
-
-  if (error) throw new Error(error.message);
-  return data || [];
-}
-
 export async function createCustomCategory(name: string) {
   const trimmed = name.trim();
   if (trimmed.length < 2) throw new Error("Name muss mindestens 2 Zeichen haben");

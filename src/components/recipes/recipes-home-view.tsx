@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  Compass,
+  Heart,
+  Search,
+  X,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeCard } from "@/components/recipes/recipe-card";
@@ -63,120 +70,135 @@ export function RecipesHomeView({
     setCategoryFilter("all");
   }
 
-  const statPills = stats
+  const quickLinks = stats
     ? [
-        { label: "Rezepte", value: stats.recipeCount, href: "/recipes" },
-        { label: "Favoriten", value: stats.favoriteCount, href: "/favorites" },
-        { label: "Öffentlich", value: stats.publicCount, href: "/discover" },
-        { label: "Geplant", value: stats.plannedMeals, href: "/meal-plan" },
+        { label: "Rezepte", value: stats.recipeCount, href: "/recipes", icon: BookOpen },
+        { label: "Favoriten", value: stats.favoriteCount, href: "/favorites", icon: Heart },
+        { label: "Öffentlich", value: stats.publicCount, href: "/discover", icon: Compass },
+        { label: "Geplant", value: stats.plannedMeals, href: "/meal-plan", icon: Calendar },
       ]
     : [];
 
+  const allCategories = [
+    { id: "all", label: "Alle", filter: "all", custom: false },
+    ...categories.map((c) => ({
+      id: c.id,
+      label: c.name,
+      filter: `std:${c.id}`,
+      custom: false,
+    })),
+    ...customCategories.map((c) => ({
+      id: c.id,
+      label: c.name,
+      filter: `custom:${c.id}`,
+      custom: true,
+    })),
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Filter oben – sticky unter dem Header */}
+      {/* Sticky Filter-Block */}
       <section
         className={cn(
-          "surface-card sticky top-14 z-30 -mx-4 border-b border-border/40 px-4 py-5 backdrop-blur-lg",
-          "md:static md:mx-0 md:border-0 md:rounded-2xl md:px-6 md:py-6"
+          "surface-card sticky top-14 z-30 -mx-4 border-b border-border/40 bg-card/95 backdrop-blur-md",
+          "md:static md:mx-0 md:overflow-hidden md:rounded-2xl md:border md:border-border/50"
         )}
       >
+        {/* Begrüßung */}
         {stats && (
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary/80">
+          <div className="flex items-start justify-between gap-4 px-4 pb-4 pt-5 md:px-6 md:pt-6">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70">
                 Willkommen zurück
               </p>
-              <h1 className="page-title mt-1">
+              <h1 className="page-title mt-1 truncate">
                 Hallo, {stats.displayName}!
               </h1>
             </div>
-            <span className="shrink-0 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground">
-              {loading ? "…" : `${results.length} Treffer`}
+            <span className="mt-1 shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+              {loading ? "…" : results.length}
+              {!loading && (
+                <span className="ml-0.5 font-normal text-primary/70">
+                  {results.length === 1 ? "Treffer" : "Treffer"}
+                </span>
+              )}
             </span>
           </div>
         )}
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Rezepte, Zutaten oder Tags suchen…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-11 rounded-xl border-border/60 bg-secondary/40 pl-11 pr-11 text-base shadow-none focus-visible:bg-background md:h-12"
-          />
-          {query && (
+        {/* Schnellzugriff – kompaktes Grid, kein zweites Filterband */}
+        {quickLinks.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 border-t border-border/40 px-4 py-4 md:px-6">
+            {quickLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-center transition-colors hover:bg-secondary/60 active:bg-secondary"
+              >
+                <link.icon className="h-4 w-4 text-primary/80" />
+                <span className="text-base font-bold leading-none">{link.value}</span>
+                <span className="text-[10px] leading-tight text-muted-foreground">
+                  {link.label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Suche */}
+        <div className="border-t border-border/40 px-4 py-4 md:px-6">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rezepte, Zutaten oder Tags suchen…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-11 rounded-xl border-border/50 bg-secondary/30 pl-11 pr-11 shadow-none focus-visible:border-primary/30 focus-visible:bg-background md:h-12"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Suche löschen"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Kategorie-Filter – horizontal scrollbar mit Fade */}
+        <div className="border-t border-border/40 px-4 pb-4 pt-3 md:px-6 md:pb-5">
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Kategorie filtern
+          </p>
+          <div className="filter-scroll-wrap -mx-1">
+            <div className="filter-scroll">
+              {allCategories.map((cat) => (
+                <FilterChip
+                  key={cat.id}
+                  active={categoryFilter === cat.filter}
+                  onClick={() => setCategoryFilter(cat.filter)}
+                  variant={cat.custom ? "custom" : "default"}
+                >
+                  {cat.label}
+                </FilterChip>
+              ))}
+            </div>
+          </div>
+
+          {hasActiveFilter && (
             <button
               type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Suche löschen"
+              onClick={clearFilters}
+              className="mt-3 text-sm font-medium text-primary hover:underline"
             >
-              <X className="h-4 w-4" />
+              Filter zurücksetzen
             </button>
           )}
         </div>
-
-        <div className="mt-5">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Kategorie
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <FilterChip
-              active={categoryFilter === "all"}
-              onClick={() => setCategoryFilter("all")}
-            >
-              Alle
-            </FilterChip>
-            {categories.map((cat) => (
-              <FilterChip
-                key={cat.id}
-                active={categoryFilter === `std:${cat.id}`}
-                onClick={() => setCategoryFilter(`std:${cat.id}`)}
-              >
-                {cat.name}
-              </FilterChip>
-            ))}
-            {customCategories.map((cat) => (
-              <FilterChip
-                key={cat.id}
-                active={categoryFilter === `custom:${cat.id}`}
-                onClick={() => setCategoryFilter(`custom:${cat.id}`)}
-                variant="custom"
-              >
-                {cat.name}
-              </FilterChip>
-            ))}
-          </div>
-        </div>
-
-        {hasActiveFilter && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="mt-3 text-sm font-medium text-primary hover:underline"
-          >
-            Filter zurücksetzen
-          </button>
-        )}
       </section>
-
-      {/* Kompakte Statistik */}
-      {stats && statPills.length > 0 && (
-        <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {statPills.map((pill) => (
-            <Link
-              key={pill.href}
-              href={pill.href}
-              className="surface-card flex min-w-[5.5rem] shrink-0 flex-col items-center px-4 py-3.5 text-center transition-colors hover:border-primary/30 hover:bg-primary/5"
-            >
-              <span className="text-lg font-bold leading-none">{pill.value}</span>
-              <span className="mt-1 text-xs text-muted-foreground">{pill.label}</span>
-            </Link>
-          ))}
-        </div>
-      )}
 
       {/* Rezept-Grid */}
       {loading ? (
@@ -186,14 +208,14 @@ export function RecipesHomeView({
           ))}
         </div>
       ) : results.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-secondary/20 px-6 py-16 text-center">
-          <p className="text-lg font-medium">
+        <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/15 px-6 py-14 text-center sm:py-16">
+          <p className="text-lg font-semibold">
             {hasActiveFilter ? "Keine Rezepte gefunden" : "Noch keine Rezepte"}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {hasActiveFilter
-              ? "Probiere andere Suchbegriffe oder Kategorien."
-              : "Tippe auf + und lege dein erstes Rezept an."}
+              ? "Probiere andere Suchbegriffe oder wähle 'Alle' in den Kategorien."
+              : "Tippe unten rechts auf + und lege dein erstes Rezept an."}
           </p>
         </div>
       ) : (
@@ -223,12 +245,12 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all active:scale-95",
+        "shrink-0 rounded-full px-4 py-2.5 text-sm font-medium transition-all active:scale-[0.97]",
         active
-          ? "bg-primary text-primary-foreground shadow-sm"
+          ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20"
           : variant === "custom"
-            ? "border border-dashed border-border bg-background text-foreground hover:border-primary/40 hover:bg-primary/5"
-            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            ? "border border-dashed border-border bg-background text-foreground hover:border-primary/30 hover:bg-primary/5"
+            : "bg-secondary/80 text-foreground hover:bg-secondary"
       )}
     >
       {children}

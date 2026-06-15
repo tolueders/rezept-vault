@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { RecipeForm } from "@/components/recipes/recipe-form";
 import { getRecipeById, getCategories } from "@/lib/queries/recipes";
-import { getCustomCategories } from "@/lib/actions/categories";
+import { getCustomCategories } from "@/lib/queries/categories";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Variante erstellen" };

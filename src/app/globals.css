@@ -106,6 +106,51 @@ body {
   display: none;
 }
 
+/* Horizontaler Filter-Scroll mit Fade-Hinweis */
+.filter-scroll-wrap {
+  position: relative;
+  margin-inline: -0.25rem;
+}
+
+.filter-scroll-wrap::before,
+.filter-scroll-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filter-scroll-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, var(--card) 20%, transparent);
+}
+
+.filter-scroll-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, var(--card) 20%, transparent);
+}
+
+.filter-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.5rem 0.5rem;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-scroll > * {
+  scroll-snap-align: start;
+}
+
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
