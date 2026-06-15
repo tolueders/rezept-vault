@@ -1,11 +1,14 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { Toaster } from "@/components/ui/sonner";
+import { requireUser } from "@/lib/supabase/auth-guard";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await requireUser();
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
