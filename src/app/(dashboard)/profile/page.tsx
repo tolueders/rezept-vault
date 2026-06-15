@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCustomCategories } from "@/lib/actions/categories";
 import { ProfileView } from "@/components/profile/profile-view";
 import { redirect } from "next/navigation";
 
@@ -12,16 +13,16 @@ export default async function ProfilePage() {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, customCategories] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    getCustomCategories(),
+  ]);
 
   return (
     <ProfileView
       profile={profile || { id: user.id, display_name: "", avatar_url: null, created_at: "", updated_at: "" }}
       email={user.email || ""}
+      customCategories={customCategories}
     />
   );
 }

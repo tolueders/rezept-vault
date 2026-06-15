@@ -6,6 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Camera,
+  Link2,
   Loader2,
   Plus,
   Trash2,
@@ -30,11 +31,12 @@ import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
-import type { RecipeCategory, RecipeWithDetails } from "@/types/database";
+import type { CustomCategory, RecipeCategory, RecipeWithDetails } from "@/types/database";
 import { toast } from "sonner";
 
 interface RecipeFormProps {
   categories: RecipeCategory[];
+  customCategories?: CustomCategory[];
   recipe?: RecipeWithDetails;
   mode?: "create" | "edit" | "variant";
   originalRecipeId?: string;
@@ -42,6 +44,7 @@ interface RecipeFormProps {
 
 export function RecipeForm({
   categories,
+  customCategories = [],
   recipe,
   mode = "create",
   originalRecipeId,
@@ -49,6 +52,7 @@ export function RecipeForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
     recipe?.image_url || null
@@ -58,7 +62,8 @@ export function RecipeForm({
   const defaultValues: RecipeFormValues = {
     title: recipe?.title || "",
     description: recipe?.description || "",
-    category_id: recipe?.category_id || categories[0]?.id || "",
+    category_id: recipe?.custom_category_id ? undefined : recipe?.category_id || categories[0]?.id || "",
+    custom_category_id: recipe?.custom_category_id || undefined,
     servings: recipe?.servings || 4,
     cook_time_minutes: recipe?.cook_time_minutes || 30,
     difficulty: recipe?.difficulty || "mittel",
@@ -93,6 +98,58 @@ export function RecipeForm({
     remove: removeStep,
   } = useFieldArray({ control: form.control, name: "steps" });
 
+  const categoryValue = form.watch("custom_category_id")
+    ? `custom:${form.watch("custom_category_id")}`
+    : `std:${form.watch("category_id") || ""}`;
+
+  function applyExtraction(data: {
+    title: string;
+    description?: string;
+    servings?: number;
+    cook_time_minutes?: number;
+    difficulty?: RecipeFormValues["difficulty"];
+    ingredients?: RecipeFormValues["ingredients"];
+    steps?: RecipeFormValues["steps"];
+  }) {
+    form.reset({
+      title: data.title,
+      description: data.description || "",
+      category_id: form.getValues("category_id"),
+      custom_category_id: form.getValues("custom_category_id"),
+      servings: data.servings || 4,
+      cook_time_minutes: data.cook_time_minutes || 30,
+      difficulty: data.difficulty || "mittel",
+      is_public: false,
+      tags: [],
+      ingredients: data.ingredients?.length
+        ? data.ingredients
+        : [{ name: "", amount: 0, unit: "" }],
+      steps: data.steps?.length ? data.steps : [{ instruction: "" }],
+    });
+  }
+
+  async function handleUrlImport() {
+    if (!importUrl.trim()) return;
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/import-recipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import fehlgeschlagen");
+      applyExtraction(data);
+      toast.success("Rezept importiert!", {
+        description: "Bitte prüfe und bearbeite die extrahierten Daten.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "URL-Import fehlgeschlagen");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   async function handlePhotoAnalysis(file: File) {
     setAnalyzing(true);
     try {
@@ -115,22 +172,7 @@ export function RecipeForm({
       if (!res.ok) throw new Error("Analyse fehlgeschlagen");
       const data = await res.json();
 
-      form.reset({
-        title: data.title,
-        description: data.description || "",
-        category_id: form.getValues("category_id"),
-        servings: data.servings || 4,
-        cook_time_minutes: data.cook_time_minutes || 30,
-        difficulty: data.difficulty || "mittel",
-        is_public: false,
-        tags: [],
-        ingredients: data.ingredients?.length
-          ? data.ingredients
-          : [{ name: "", amount: 0, unit: "" }],
-        steps: data.steps?.length
-          ? data.steps
-          : [{ instruction: "" }],
-      });
+      applyExtraction(data);
 
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
@@ -195,9 +237,10 @@ export function RecipeForm({
     <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto max-w-3xl space-y-8">
       {mode === "create" && (
         <Tabs defaultValue="manual">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="manual">Manuell</TabsTrigger>
-            <TabsTrigger value="photo">Foto-Upload</TabsTrigger>
+            <TabsTrigger value="photo">Foto</TabsTrigger>
+            <TabsTrigger value="url">URL</TabsTrigger>
           </TabsList>
           <TabsContent value="photo" className="mt-4">
             <div className="rounded-xl border-2 border-dashed border-border p-8 text-center">
@@ -220,6 +263,34 @@ export function RecipeForm({
                   Rezept wird analysiert…
                 </p>
               )}
+            </div>
+          </TabsContent>
+          <TabsContent value="url" className="mt-4">
+            <div className="rounded-xl border-2 border-dashed border-border p-8">
+              <Link2 className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <p className="mb-4 text-center text-sm text-muted-foreground">
+                Link zu einem Online-Rezept einfügen – KI extrahiert Titel, Zutaten und Schritte.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  type="url"
+                  placeholder="https://www.chefkoch.de/rezept/…"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  disabled={analyzing}
+                />
+                <Button
+                  type="button"
+                  onClick={handleUrlImport}
+                  disabled={analyzing || !importUrl.trim()}
+                >
+                  {analyzing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Importieren"
+                  )}
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
@@ -257,20 +328,43 @@ export function RecipeForm({
           <div className="space-y-2">
             <Label>Kategorie</Label>
             <Select
-              value={form.watch("category_id")}
-              onValueChange={(v) => v && form.setValue("category_id", v)}
+              value={categoryValue}
+              onValueChange={(v) => {
+                if (!v) return;
+                if (v.startsWith("custom:")) {
+                  form.setValue("custom_category_id", v.replace("custom:", ""));
+                  form.setValue("category_id", undefined);
+                } else {
+                  form.setValue("category_id", v.replace("std:", ""));
+                  form.setValue("custom_category_id", undefined);
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Kategorie wählen" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
+                  <SelectItem key={cat.id} value={`std:${cat.id}`}>
                     {cat.name}
                   </SelectItem>
                 ))}
+                {customCategories.length > 0 && (
+                  <>
+                    {customCategories.map((cat) => (
+                      <SelectItem key={cat.id} value={`custom:${cat.id}`}>
+                        {cat.name} (eigen)
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
+            {form.formState.errors.category_id && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.category_id.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Schwierigkeit</Label>

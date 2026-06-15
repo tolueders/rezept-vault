@@ -67,6 +67,52 @@ export async function addMealPlanEntry(
   revalidatePath("/meal-plan");
 }
 
+export async function addRecipeToMealPlan({
+  recipeId,
+  dayOfWeek,
+  mealType,
+  weekStart,
+}: {
+  recipeId: string;
+  dayOfWeek: number;
+  mealType: string;
+  weekStart: string;
+}) {
+  const { supabase, user } = await requireUser();
+
+  const { data: recipe } = await supabase
+    .from("recipes")
+    .select("id")
+    .eq("id", recipeId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!recipe) throw new Error("Rezept nicht gefunden");
+
+  const { data: existingPlan } = await supabase
+    .from("meal_plans")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("week_start", weekStart)
+    .maybeSingle();
+
+  let mealPlanId = existingPlan?.id;
+
+  if (!mealPlanId) {
+    const { data: plan, error } = await supabase
+      .from("meal_plans")
+      .insert({ user_id: user.id, week_start: weekStart })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    mealPlanId = plan.id;
+  }
+
+  await addMealPlanEntry(mealPlanId, dayOfWeek, recipeId, mealType);
+  revalidatePath("/meal-plan");
+}
+
 export async function removeMealPlanEntry(entryId: string) {
   const { supabase, user } = await requireUser();
 

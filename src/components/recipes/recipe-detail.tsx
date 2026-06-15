@@ -22,6 +22,7 @@ import { StarRating } from "@/components/recipes/star-rating";
 import { PortionCalculator } from "@/components/recipes/portion-calculator";
 import { CommentsSection } from "@/components/recipes/comments-section";
 import { CookMode } from "@/components/recipes/cook-mode";
+import { AddToMealPlanDialog } from "@/components/recipes/add-to-meal-plan-dialog";
 import { RecipeVariants } from "@/components/recipes/recipe-variants";
 import {
   toggleFavorite,
@@ -30,6 +31,7 @@ import {
   copyRecipeToCollection,
 } from "@/lib/actions/recipes";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
+import { shareOrCopy } from "@/lib/share-utils";
 import type { RecipeWithDetails } from "@/types/database";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -96,8 +98,16 @@ export function RecipeDetail({
 
   async function handleShare() {
     const url = `${window.location.origin}/recipe/${recipe.slug}`;
-    await navigator.clipboard.writeText(url);
-    toast.success("Link kopiert!");
+    try {
+      const result = await shareOrCopy({
+        title: recipe.title,
+        text: `Schau dir dieses Rezept an: ${recipe.title}`,
+        url,
+      });
+      toast.success(result === "shared" ? "Geteilt!" : "Link kopiert!");
+    } catch {
+      // User cancelled share sheet
+    }
   }
 
   if (cookMode) {
@@ -143,6 +153,9 @@ export function RecipeDetail({
           <div className="mb-2 flex flex-wrap gap-2">
             {recipe.category && (
               <Badge variant="secondary">{recipe.category.name}</Badge>
+            )}
+            {recipe.custom_category && (
+              <Badge variant="secondary">{recipe.custom_category.name}</Badge>
             )}
             {recipe.tags?.map((tag) => (
               <Badge key={tag.id} variant="outline">
@@ -199,6 +212,13 @@ export function RecipeDetail({
             </Button>
           )}
           {currentUserId && !isPublicView && (
+            <AddToMealPlanDialog
+              recipeId={recipe.id}
+              recipeTitle={recipe.title}
+              defaultServings={recipe.servings}
+            />
+          )}
+          {currentUserId && !isPublicView && (
             <Button variant="outline" size="icon" onClick={handleFavorite}>
               <Heart
                 className={`h-4 w-4 ${favorited ? "fill-primary text-primary" : ""}`}
@@ -217,7 +237,13 @@ export function RecipeDetail({
       </div>
 
       {!isPublicView && isOwner && (
-        <div className="mb-4 flex gap-2 md:hidden">
+        <div className="mb-4 flex flex-wrap gap-2 md:hidden">
+          <AddToMealPlanDialog
+            recipeId={recipe.id}
+            recipeTitle={recipe.title}
+            defaultServings={recipe.servings}
+            className="flex-1"
+          />
           <Button variant="outline" size="sm" className="flex-1" asChild>
             <Link href={`/recipes/${recipe.id}/edit`}>
               <Edit className="mr-1 h-4 w-4" />

@@ -120,7 +120,7 @@ export async function getUserRecipes(
   let query = supabase
     .from("recipes")
     .select(
-      "*, category:recipe_categories(*), tags:recipe_tags(*)",
+      "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*)",
       { count: "exact" }
     )
     .eq("user_id", user.id)
@@ -150,7 +150,7 @@ export async function searchRecipes(query: string, categoryId?: string) {
   if (!trimmed) {
     let q = supabase
       .from("recipes")
-      .select("*, category:recipe_categories(*), tags:recipe_tags(*)")
+      .select("*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -161,7 +161,7 @@ export async function searchRecipes(query: string, categoryId?: string) {
 
   const { data: recipes } = await supabase
     .from("recipes")
-    .select("*, category:recipe_categories(*), tags:recipe_tags(*)")
+    .select("*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*)")
     .eq("user_id", user.id)
     .or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%`)
     .limit(20);
@@ -185,7 +185,7 @@ export async function searchRecipes(query: string, categoryId?: string) {
   if (extraIds.length) {
     const { data } = await supabase
       .from("recipes")
-      .select("*, category:recipe_categories(*), tags:recipe_tags(*)")
+      .select("*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*)")
       .eq("user_id", user.id)
       .in("id", [...new Set(extraIds)]);
     extraRecipes = data || [];
@@ -211,7 +211,7 @@ export async function getPublicRecipes(
   let query = supabase
     .from("recipes")
     .select(
-      "*, category:recipe_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)",
+      "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)",
       { count: "exact" }
     )
     .eq("is_public", true)
@@ -239,7 +239,7 @@ export async function searchPublicRecipes(query: string, categoryId?: string) {
     let q = supabase
       .from("recipes")
       .select(
-        "*, category:recipe_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
+        "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
       )
       .eq("is_public", true)
       .order("created_at", { ascending: false })
@@ -269,7 +269,7 @@ export async function searchPublicRecipes(query: string, categoryId?: string) {
     const { data } = await supabase
       .from("recipes")
       .select(
-        "*, category:recipe_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
+        "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
       )
       .eq("is_public", true)
       .in("id", ids);
@@ -307,7 +307,7 @@ export async function getFavoriteRecipes(): Promise<
   const { data } = await supabase
     .from("recipe_favorites")
     .select(
-      "recipe:recipes(*, category:recipe_categories(*), tags:recipe_tags(*))"
+      "recipe:recipes(*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*))"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });

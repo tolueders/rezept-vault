@@ -4,11 +4,12 @@ import { Clock, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
-import type { Recipe, RecipeCategory, RecipeTag } from "@/types/database";
+import type { Recipe, RecipeCategory, RecipeTag, CustomCategory } from "@/types/database";
 
 interface RecipeCardProps {
   recipe: Recipe & {
     category?: Pick<RecipeCategory, "id" | "name" | "slug"> | null;
+    custom_category?: Pick<CustomCategory, "id" | "name" | "slug"> | null;
     tags?: Pick<RecipeTag, "id" | "tag">[];
   };
 }
@@ -32,9 +33,9 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
               Kein Bild
             </div>
           )}
-          {recipe.category && (
+          {(recipe.category || recipe.custom_category) && (
             <Badge className="absolute left-3 top-3 bg-background/90 text-foreground">
-              {recipe.category.name}
+              {recipe.category?.name || recipe.custom_category?.name}
             </Badge>
           )}
         </div>

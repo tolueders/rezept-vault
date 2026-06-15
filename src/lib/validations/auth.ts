@@ -45,19 +45,24 @@ export const stepSchema = z.object({
   instruction: z.string().min(1, "Schritt erforderlich"),
 });
 
-export const recipeSchema = z.object({
-  title: z.string().min(2, "Titel muss mindestens 2 Zeichen haben"),
-  description: z.string().optional(),
-  category_id: z.string().min(1, "Kategorie erforderlich"),
-  custom_category_id: z.string().optional(),
-  servings: z.number().min(1, "Mindestens 1 Portion"),
-  cook_time_minutes: z.number().min(0),
-  difficulty: z.enum(["einfach", "mittel", "schwer"]),
-  is_public: z.boolean(),
-  tags: z.array(z.string()),
-  ingredients: z.array(ingredientSchema).min(1, "Mindestens eine Zutat"),
-  steps: z.array(stepSchema).min(1, "Mindestens ein Schritt"),
-});
+export const recipeSchema = z
+  .object({
+    title: z.string().min(2, "Titel muss mindestens 2 Zeichen haben"),
+    description: z.string().optional(),
+    category_id: z.string().optional(),
+    custom_category_id: z.string().optional(),
+    servings: z.number().min(1, "Mindestens 1 Portion"),
+    cook_time_minutes: z.number().min(0),
+    difficulty: z.enum(["einfach", "mittel", "schwer"]),
+    is_public: z.boolean(),
+    tags: z.array(z.string()),
+    ingredients: z.array(ingredientSchema).min(1, "Mindestens eine Zutat"),
+    steps: z.array(stepSchema).min(1, "Mindestens ein Schritt"),
+  })
+  .refine((data) => data.category_id || data.custom_category_id, {
+    message: "Kategorie erforderlich",
+    path: ["category_id"],
+  });
 
 export const commentSchema = z.object({
   content: z.string().min(1, "Kommentar darf nicht leer sein").max(1000),

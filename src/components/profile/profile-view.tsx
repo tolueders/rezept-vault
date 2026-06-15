@@ -12,16 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, type ProfileFormValues } from "@/lib/validations/auth";
 import { updateProfile, uploadAvatar } from "@/lib/actions/profile";
+import { CustomCategoriesSection } from "@/components/profile/custom-categories-section";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import type { Profile } from "@/types/database";
+import type { CustomCategory, Profile } from "@/types/database";
 
 interface ProfileViewProps {
   profile: Profile;
   email: string;
+  customCategories: CustomCategory[];
 }
 
-export function ProfileView({ profile, email }: ProfileViewProps) {
+export function ProfileView({ profile, email, customCategories }: ProfileViewProps) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const {
@@ -114,6 +116,8 @@ export function ProfileView({ profile, email }: ProfileViewProps) {
           </form>
         </CardContent>
       </Card>
+
+      <CustomCategoriesSection categories={customCategories} />
 
       <Button variant="outline" className="w-full" onClick={handleLogout}>
         Abmelden

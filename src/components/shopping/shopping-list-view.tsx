@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Share2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +15,7 @@ import {
   createEmptyShoppingList,
 } from "@/lib/actions/meal-plan";
 import { formatAmount } from "@/lib/recipe-utils";
+import { formatShoppingListText, shareOrCopy } from "@/lib/share-utils";
 import type { ShoppingList, ShoppingListItem } from "@/types/database";
 import { toast } from "sonner";
 
@@ -79,6 +80,20 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
     }
   }
 
+  async function handleShareList() {
+    if (!activeList) return;
+    const text = formatShoppingListText(activeList.title, activeList.items);
+    try {
+      const result = await shareOrCopy({
+        title: activeList.title,
+        text,
+      });
+      toast.success(result === "shared" ? "Liste geteilt!" : "Liste kopiert!");
+    } catch {
+      // User cancelled
+    }
+  }
+
   if (!activeList) {
     return (
       <div className="py-16 text-center">
@@ -110,6 +125,15 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 sm:flex-none"
+            onClick={handleShareList}
+            disabled={activeList.items.length === 0}
+          >
+            <Share2 className="mr-1 h-4 w-4" />
+            Teilen
+          </Button>
           <Button
             variant="outline"
             className="flex-1 sm:flex-none"
