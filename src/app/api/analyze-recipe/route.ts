@@ -25,8 +25,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Gemini analysis error:", error);
     const message =
-      error instanceof Error && error.message.includes("GEMINI_API_KEY")
-        ? "Gemini API Key fehlt. Siehe GEMINI_SETUP.md"
+      error instanceof Error
+        ? error.message.includes("GEMINI_API_KEY")
+          ? "Gemini API Key fehlt. Siehe GEMINI_SETUP.md"
+          : error.message
         : "Rezept konnte nicht analysiert werden";
     return NextResponse.json({ error: message }, { status: 500 });
   }

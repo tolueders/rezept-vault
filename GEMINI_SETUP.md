@@ -21,7 +21,7 @@ GEMINI_API_KEY=dein-api-key-hier
 
 ## 3. Verwendetes Modell
 
-- Modell: `gemini-2.0-flash`
+- Modell: `gemini-2.5-flash` (über `GEMINI_MODEL` in `src/lib/gemini/client.ts`)
 - Eingabe: Base64-kodiertes Bild (JPEG, PNG, WebP)
 - Ausgabe: JSON mit Rezeptstruktur
 

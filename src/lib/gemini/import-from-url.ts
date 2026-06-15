@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiModel, parseGeminiJson } from "@/lib/gemini/client";
 import type { GeminiRecipeExtraction } from "@/types/database";
 
 const URL_EXTRACTION_PROMPT = `Analysiere den folgenden Rezepttext von einer Webseite und extrahiere alle Informationen als JSON.
@@ -36,11 +36,6 @@ function stripHtml(html: string): string {
 export async function fetchAndParseRecipeUrl(
   url: string
 ): Promise<GeminiRecipeExtraction> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY ist nicht konfiguriert");
-  }
-
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(url);
@@ -72,13 +67,9 @@ export async function fetchAndParseRecipeUrl(
     throw new Error("Zu wenig Rezepttext auf der Seite gefunden");
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
+  const model = getGeminiModel();
   const result = await model.generateContent(URL_EXTRACTION_PROMPT + text);
-  const raw = result.response.text();
-  const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
-  const parsed = JSON.parse(cleaned) as GeminiRecipeExtraction;
+  const parsed = parseGeminiJson<GeminiRecipeExtraction>(result.response.text());
 
   return {
     title: parsed.title || "Unbenanntes Rezept",

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiModel, parseGeminiJson } from "@/lib/gemini/client";
 import type { GeminiRecipeExtraction } from "@/types/database";
 
 const EXTRACTION_PROMPT = `Analysiere dieses Rezeptbild und extrahiere alle Informationen als JSON.
@@ -19,13 +19,7 @@ export async function analyzeRecipeImage(
   imageBase64: string,
   mimeType: string
 ): Promise<GeminiRecipeExtraction> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY ist nicht konfiguriert");
-  }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = getGeminiModel();
 
   const result = await model.generateContent([
     EXTRACTION_PROMPT,
@@ -37,9 +31,7 @@ export async function analyzeRecipeImage(
     },
   ]);
 
-  const text = result.response.text();
-  const cleaned = text.replace(/```json\n?|\n?```/g, "").trim();
-  const parsed = JSON.parse(cleaned) as GeminiRecipeExtraction;
+  const parsed = parseGeminiJson<GeminiRecipeExtraction>(result.response.text());
 
   return {
     title: parsed.title || "Unbenanntes Rezept",

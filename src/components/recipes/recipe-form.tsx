@@ -30,6 +30,7 @@ import { ImageUploader } from "@/components/recipes/image-uploader";
 import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
+import { compressImage } from "@/lib/image-utils";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
 import type { CustomCategory, RecipeCategory, RecipeWithDetails } from "@/types/database";
 import { toast } from "sonner";
@@ -153,6 +154,9 @@ export function RecipeForm({
   async function handlePhotoAnalysis(file: File) {
     setAnalyzing(true);
     try {
+      const prepared = await compressImage(file);
+      const mimeType = prepared.type || "image/jpeg";
+
       const reader = new FileReader();
       const base64 = await new Promise<string>((resolve, reject) => {
         reader.onload = () => {
@@ -160,27 +164,29 @@ export function RecipeForm({
           resolve(result.split(",")[1]);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(prepared);
       });
 
       const res = await fetch("/api/analyze-recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64, mimeType: file.type }),
+        body: JSON.stringify({ image: base64, mimeType }),
       });
 
-      if (!res.ok) throw new Error("Analyse fehlgeschlagen");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Analyse fehlgeschlagen");
 
       applyExtraction(data);
 
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      setImageFile(prepared);
+      setImagePreview(URL.createObjectURL(prepared));
       toast.success("Rezept erkannt!", {
         description: "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
-    } catch {
-      toast.error("Bildanalyse fehlgeschlagen");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Bildanalyse fehlgeschlagen"
+      );
     } finally {
       setAnalyzing(false);
     }
