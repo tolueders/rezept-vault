@@ -23,6 +23,7 @@
   --input: #e8e0d8;
   --ring: #c4654a;
   --radius: 0.75rem;
+  --app-header-offset: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
 @theme inline {
@@ -70,6 +71,10 @@ body {
 }
 
 @media (min-width: 768px) {
+  :root {
+    --app-header-offset: 4rem;
+  }
+
   .app-main {
     padding-bottom: 2rem;
   }
@@ -125,12 +130,23 @@ body {
 
 .filter-scroll-wrap::before {
   left: 0;
-  background: linear-gradient(to right, var(--card) 20%, transparent);
+  background: linear-gradient(to right, var(--filter-scroll-bg, var(--card)) 20%, transparent);
 }
 
 .filter-scroll-wrap::after {
   right: 0;
-  background: linear-gradient(to left, var(--card) 20%, transparent);
+  background: linear-gradient(to left, var(--filter-scroll-bg, var(--card)) 20%, transparent);
+}
+
+.home-sticky-bar {
+  top: var(--app-header-offset);
+  --filter-scroll-bg: var(--background);
+}
+
+@media (min-width: 768px) {
+  .home-sticky-bar {
+    --filter-scroll-bg: var(--card);
+  }
 }
 
 .filter-scroll {

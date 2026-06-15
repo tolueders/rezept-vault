@@ -100,14 +100,14 @@ export function RecipesHomeView({
       {/* Sticky Filter-Block */}
       <section
         className={cn(
-          "surface-card sticky z-30 -mx-4 -mt-5 border-b border-border/40 bg-card/95 backdrop-blur-md",
-          "top-[calc(3.5rem+env(safe-area-inset-top,0px))]",
-          "md:static md:mx-0 md:mt-0 md:overflow-hidden md:rounded-2xl md:border md:border-border/50 md:top-auto"
+          "home-sticky-bar sticky z-30 -mx-4 bg-background/95 backdrop-blur-lg",
+          "border-b border-border/40",
+          "md:surface-card md:static md:mx-0 md:top-auto md:overflow-hidden md:rounded-2xl md:border md:border-border/50 md:bg-card/95"
         )}
       >
         {/* Begrüßung */}
         {stats && (
-          <div className="flex items-start justify-between gap-4 px-4 pb-4 pt-4 md:px-6 md:pt-6">
+          <div className="flex items-start justify-between gap-4 px-4 pb-4 pt-0 md:px-6 md:pt-6">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70">
                 Willkommen zurück
