@@ -10,9 +10,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  try {
+    let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -27,34 +28,37 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const isAuthRoute =
+      request.nextUrl.pathname.startsWith("/login") ||
+      request.nextUrl.pathname.startsWith("/register") ||
+      request.nextUrl.pathname.startsWith("/forgot-password");
+
+    const isPublicRoute =
+      request.nextUrl.pathname === "/" ||
+      request.nextUrl.pathname.startsWith("/recipe/") ||
+      request.nextUrl.pathname.startsWith("/api/");
+
+    if (!user && !isAuthRoute && !isPublicRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
     }
-  );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (user && isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/recipes";
+      return NextResponse.redirect(url);
+    }
 
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/register") ||
-    request.nextUrl.pathname.startsWith("/forgot-password");
-
-  const isPublicRoute =
-    request.nextUrl.pathname === "/" ||
-    request.nextUrl.pathname.startsWith("/recipe/") ||
-    request.nextUrl.pathname.startsWith("/api/");
-
-  if (!user && !isAuthRoute && !isPublicRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return supabaseResponse;
+  } catch (error) {
+    console.error("Middleware error:", error);
+    return NextResponse.next({ request });
   }
-
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/recipes";
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
 }
