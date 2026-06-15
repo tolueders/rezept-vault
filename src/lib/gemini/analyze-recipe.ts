@@ -1,4 +1,5 @@
 import { getGeminiModel, parseGeminiJson } from "@/lib/gemini/client";
+import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
 import type { GeminiRecipeExtraction } from "@/types/database";
 
 const EXTRACTION_PROMPT = `Analysiere dieses Rezeptbild und extrahiere alle Informationen als JSON.
@@ -32,14 +33,5 @@ export async function analyzeRecipeImage(
   ]);
 
   const parsed = parseGeminiJson<GeminiRecipeExtraction>(result.response.text());
-
-  return {
-    title: parsed.title || "Unbenanntes Rezept",
-    description: parsed.description || "",
-    servings: parsed.servings || 4,
-    cook_time_minutes: parsed.cook_time_minutes || 30,
-    difficulty: parsed.difficulty || "mittel",
-    ingredients: parsed.ingredients || [],
-    steps: parsed.steps || [],
-  };
+  return normalizeRecipeExtraction(parsed);
 }

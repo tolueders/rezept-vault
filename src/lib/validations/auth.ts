@@ -59,7 +59,7 @@ export const recipeSchema = z
     ingredients: z.array(ingredientSchema).min(1, "Mindestens eine Zutat"),
     steps: z.array(stepSchema).min(1, "Mindestens ein Schritt"),
   })
-  .refine((data) => data.category_id || data.custom_category_id, {
+  .refine((data) => Boolean(data.category_id || data.custom_category_id), {
     message: "Kategorie erforderlich",
     path: ["category_id"],
   });

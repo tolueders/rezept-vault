@@ -5,6 +5,23 @@ import { generateSlug } from "@/lib/recipe-utils";
 import type { RecipeFormValues } from "@/lib/validations/auth";
 import { revalidatePath } from "next/cache";
 
+function toNumber(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeRecipeFormData(data: RecipeFormValues): RecipeFormValues {
+  return {
+    ...data,
+    servings: Math.max(1, toNumber(data.servings, 1)),
+    cook_time_minutes: Math.max(0, toNumber(data.cook_time_minutes, 0)),
+    ingredients: data.ingredients.map((ingredient) => ({
+      ...ingredient,
+      amount: Math.max(0, toNumber(ingredient.amount, 0)),
+    })),
+  };
+}
+
 export async function createRecipe(
   data: RecipeFormValues,
   imageUrl?: string | null
@@ -15,37 +32,39 @@ export async function createRecipe(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
 
-  const slug = generateSlug(data.title) + "-" + Date.now().toString(36);
+  const recipeData = normalizeRecipeFormData(data);
+
+  const slug = generateSlug(recipeData.title) + "-" + Date.now().toString(36);
 
   const { data: recipe, error } = await supabase
     .from("recipes")
     .insert({
       user_id: user.id,
-      title: data.title,
+      title: recipeData.title,
       slug,
-      description: data.description || "",
+      description: recipeData.description || "",
       image_url: imageUrl || null,
-      category_id: data.category_id || null,
-      custom_category_id: data.custom_category_id || null,
-      servings: data.servings,
-      cook_time_minutes: data.cook_time_minutes,
-      difficulty: data.difficulty,
-      is_public: data.is_public,
+      category_id: recipeData.category_id || null,
+      custom_category_id: recipeData.custom_category_id || null,
+      servings: recipeData.servings,
+      cook_time_minutes: recipeData.cook_time_minutes,
+      difficulty: recipeData.difficulty,
+      is_public: recipeData.is_public,
     })
     .select()
     .single();
 
   if (error) throw new Error(error.message);
 
-  if (data.tags.length > 0) {
+  if (recipeData.tags.length > 0) {
     await supabase.from("recipe_tags").insert(
-      data.tags.map((tag) => ({ recipe_id: recipe.id, tag: tag.trim() }))
+      recipeData.tags.map((tag) => ({ recipe_id: recipe.id, tag: tag.trim() }))
     );
   }
 
-  if (data.ingredients.length > 0) {
+  if (recipeData.ingredients.length > 0) {
     await supabase.from("recipe_ingredients").insert(
-      data.ingredients.map((ing, i) => ({
+      recipeData.ingredients.map((ing, i) => ({
         recipe_id: recipe.id,
         name: ing.name,
         amount: ing.amount,
@@ -55,9 +74,9 @@ export async function createRecipe(
     );
   }
 
-  if (data.steps.length > 0) {
+  if (recipeData.steps.length > 0) {
     await supabase.from("recipe_steps").insert(
-      data.steps.map((step, i) => ({
+      recipeData.steps.map((step, i) => ({
         recipe_id: recipe.id,
         instruction: step.instruction,
         sort_order: i,
@@ -80,15 +99,17 @@ export async function updateRecipe(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
 
+  const recipeData = normalizeRecipeFormData(data);
+
   const updateData: Record<string, unknown> = {
-    title: data.title,
-    description: data.description || "",
-    category_id: data.category_id || null,
-    custom_category_id: data.custom_category_id || null,
-    servings: data.servings,
-    cook_time_minutes: data.cook_time_minutes,
-    difficulty: data.difficulty,
-    is_public: data.is_public,
+    title: recipeData.title,
+    description: recipeData.description || "",
+    category_id: recipeData.category_id || null,
+    custom_category_id: recipeData.custom_category_id || null,
+    servings: recipeData.servings,
+    cook_time_minutes: recipeData.cook_time_minutes,
+    difficulty: recipeData.difficulty,
+    is_public: recipeData.is_public,
   };
 
   if (imageUrl !== undefined) {
@@ -107,14 +128,14 @@ export async function updateRecipe(
   await supabase.from("recipe_ingredients").delete().eq("recipe_id", id);
   await supabase.from("recipe_steps").delete().eq("recipe_id", id);
 
-  if (data.tags.length > 0) {
+  if (recipeData.tags.length > 0) {
     await supabase.from("recipe_tags").insert(
-      data.tags.map((tag) => ({ recipe_id: id, tag: tag.trim() }))
+      recipeData.tags.map((tag) => ({ recipe_id: id, tag: tag.trim() }))
     );
   }
 
   await supabase.from("recipe_ingredients").insert(
-    data.ingredients.map((ing, i) => ({
+    recipeData.ingredients.map((ing, i) => ({
       recipe_id: id,
       name: ing.name,
       amount: ing.amount,
@@ -124,7 +145,7 @@ export async function updateRecipe(
   );
 
   await supabase.from("recipe_steps").insert(
-    data.steps.map((step, i) => ({
+    recipeData.steps.map((step, i) => ({
       recipe_id: id,
       instruction: step.instruction,
       sort_order: i,
@@ -347,6 +368,8 @@ export async function createVariant(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
 
+  const recipeData = normalizeRecipeFormData(data);
+
   const slug =
     generateSlug(variantName) + "-variant-" + Date.now().toString(36);
 
@@ -356,12 +379,13 @@ export async function createVariant(
       user_id: user.id,
       title: variantName,
       slug,
-      description: data.description || "",
+      description: recipeData.description || "",
       image_url: imageUrl || null,
-      category_id: data.category_id || null,
-      servings: data.servings,
-      cook_time_minutes: data.cook_time_minutes,
-      difficulty: data.difficulty,
+      category_id: recipeData.category_id || null,
+      custom_category_id: recipeData.custom_category_id || null,
+      servings: recipeData.servings,
+      cook_time_minutes: recipeData.cook_time_minutes,
+      difficulty: recipeData.difficulty,
       is_public: false,
       original_recipe_id: originalRecipeId,
       is_variant: true,
@@ -378,13 +402,13 @@ export async function createVariant(
     variant_name: variantName,
   });
 
-  if (data.tags.length > 0) {
+  if (recipeData.tags.length > 0) {
     await supabase.from("recipe_tags").insert(
-      data.tags.map((tag) => ({ recipe_id: variant.id, tag: tag.trim() }))
+      recipeData.tags.map((tag) => ({ recipe_id: variant.id, tag: tag.trim() }))
     );
   }
   await supabase.from("recipe_ingredients").insert(
-    data.ingredients.map((ing, i) => ({
+    recipeData.ingredients.map((ing, i) => ({
       recipe_id: variant.id,
       name: ing.name,
       amount: ing.amount,
@@ -393,7 +417,7 @@ export async function createVariant(
     }))
   );
   await supabase.from("recipe_steps").insert(
-    data.steps.map((step, i) => ({
+    recipeData.steps.map((step, i) => ({
       recipe_id: variant.id,
       instruction: step.instruction,
       sort_order: i,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Camera,
@@ -31,9 +31,18 @@ import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
 import { compressImage } from "@/lib/image-utils";
+import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
 import type { CustomCategory, RecipeCategory, RecipeWithDetails } from "@/types/database";
 import { toast } from "sonner";
+
+const numberFieldOptions = {
+  valueAsNumber: true,
+  setValueAs: (value: string | number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  },
+} as const;
 
 interface RecipeFormProps {
   categories: RecipeCategory[];
@@ -103,29 +112,54 @@ export function RecipeForm({
     ? `custom:${form.watch("custom_category_id")}`
     : `std:${form.watch("category_id") || ""}`;
 
-  function applyExtraction(data: {
-    title: string;
-    description?: string;
-    servings?: number;
-    cook_time_minutes?: number;
-    difficulty?: RecipeFormValues["difficulty"];
-    ingredients?: RecipeFormValues["ingredients"];
-    steps?: RecipeFormValues["steps"];
-  }) {
+  function applyExtraction(raw: Parameters<typeof normalizeRecipeExtraction>[0]) {
+    const data = normalizeRecipeExtraction(raw);
+    const customCategoryId = form.getValues("custom_category_id");
+    const categoryId = customCategoryId
+      ? undefined
+      : form.getValues("category_id") || categories[0]?.id || "";
+
     form.reset({
       title: data.title,
       description: data.description || "",
-      category_id: form.getValues("category_id"),
-      custom_category_id: form.getValues("custom_category_id"),
-      servings: data.servings || 4,
-      cook_time_minutes: data.cook_time_minutes || 30,
-      difficulty: data.difficulty || "mittel",
+      category_id: categoryId,
+      custom_category_id: customCategoryId,
+      servings: data.servings,
+      cook_time_minutes: data.cook_time_minutes,
+      difficulty: data.difficulty,
       is_public: false,
       tags: [],
-      ingredients: data.ingredients?.length
-        ? data.ingredients
-        : [{ name: "", amount: 0, unit: "" }],
-      steps: data.steps?.length ? data.steps : [{ instruction: "" }],
+      ingredients: data.ingredients,
+      steps: data.steps,
+    });
+  }
+
+  function getFirstValidationMessage(errors: FieldErrors<RecipeFormValues>): string {
+    if (errors.title?.message) return String(errors.title.message);
+    if (errors.category_id?.message) return String(errors.category_id.message);
+    if (errors.ingredients?.message) return String(errors.ingredients.message);
+    if (errors.steps?.message) return String(errors.steps.message);
+
+    const ingredientError = errors.ingredients;
+    if (Array.isArray(ingredientError)) {
+      for (const item of ingredientError) {
+        if (item?.name?.message) return String(item.name.message);
+      }
+    }
+
+    const stepError = errors.steps;
+    if (Array.isArray(stepError)) {
+      for (const item of stepError) {
+        if (item?.instruction?.message) return String(item.instruction.message);
+      }
+    }
+
+    return "Bitte alle Pflichtfelder ausfüllen";
+  }
+
+  function onInvalid(errors: FieldErrors<RecipeFormValues>) {
+    toast.error("Rezept unvollständig", {
+      description: getFirstValidationMessage(errors),
     });
   }
 
@@ -240,7 +274,10 @@ export function RecipeForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto max-w-3xl space-y-8">
+    <form
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+      className="mx-auto max-w-3xl space-y-8"
+    >
       {mode === "create" && (
         <Tabs defaultValue="manual">
           <TabsList className="grid w-full grid-cols-3">
@@ -401,7 +438,13 @@ export function RecipeForm({
               id="servings"
               type="number"
               min={1}
-              {...form.register("servings", { valueAsNumber: true })}
+              {...form.register("servings", {
+                ...numberFieldOptions,
+                setValueAs: (value: string | number) => {
+                  const parsed = Number(value);
+                  return Number.isFinite(parsed) ? parsed : 1;
+                },
+              })}
             />
           </div>
           <div className="space-y-2">
@@ -410,7 +453,7 @@ export function RecipeForm({
               id="cook_time"
               type="number"
               min={0}
-              {...form.register("cook_time_minutes", { valueAsNumber: true })}
+              {...form.register("cook_time_minutes", numberFieldOptions)}
             />
           </div>
         </div>
@@ -490,7 +533,7 @@ export function RecipeForm({
             <Input
               type="number"
               placeholder="Menge"
-              {...form.register(`ingredients.${index}.amount`, { valueAsNumber: true })}
+              {...form.register(`ingredients.${index}.amount`, numberFieldOptions)}
               className="w-24"
             />
             <Input
@@ -509,6 +552,11 @@ export function RecipeForm({
             </Button>
           </div>
         ))}
+        {form.formState.errors.ingredients?.message && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.ingredients.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -545,6 +593,11 @@ export function RecipeForm({
             </Button>
           </div>
         ))}
+        {form.formState.errors.steps?.message && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.steps.message}
+          </p>
+        )}
       </div>
 
       <div className="flex gap-3 pb-8">
