@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAndParseRecipeUrl } from "@/lib/gemini/import-from-url";
+import { getGeminiErrorMessage } from "@/lib/gemini/client";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -24,10 +25,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(extraction);
   } catch (error) {
     console.error("URL import error:", error);
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Rezept konnte nicht importiert werden";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: getGeminiErrorMessage(error) },
+      { status: 500 }
+    );
   }
 }

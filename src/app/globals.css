@@ -276,3 +276,36 @@ body {
   background: var(--card);
   box-shadow: 0 1px 3px rgba(61, 44, 30, 0.04);
 }
+
+/* Rezept-Formular */
+.form-section {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklch, var(--border), transparent 15%);
+  background: var(--card);
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(61, 44, 30, 0.04);
+}
+
+@media (min-width: 640px) {
+  .form-section {
+    padding: 1.5rem;
+  }
+}
+
+.form-section-title {
+  margin-bottom: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.form-import-card .form-section-title {
+  margin-bottom: 0;
+}
+
+.image-upload-tile:focus-within {
+  outline: 2px solid color-mix(in oklch, var(--ring), transparent 20%);
+  outline-offset: 2px;
+}

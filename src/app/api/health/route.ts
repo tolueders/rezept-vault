@@ -6,6 +6,7 @@ export async function GET() {
     ok: true,
     supabaseUrl: !!getSupabaseUrl(),
     supabaseKey: !!getSupabaseAnonKey(),
+    geminiKey: !!process.env.GEMINI_API_KEY,
     appUrl: process.env.NEXT_PUBLIC_APP_URL ?? null,
   });
 }

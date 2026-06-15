@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   X,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
 import { compressImage } from "@/lib/image-utils";
+import { MAX_ANALYZE_BASE64_LENGTH } from "@/lib/image-mime";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
 import type { CustomCategory, RecipeCategory, RecipeWithDetails } from "@/types/database";
@@ -68,6 +70,11 @@ export function RecipeForm({
     recipe?.image_url || null
   );
   const [tagInput, setTagInput] = useState("");
+  const [importTab, setImportTab] = useState("manual");
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const showHeroUploader =
+    mode !== "create" || importTab !== "photo" || Boolean(imagePreview);
 
   const defaultValues: RecipeFormValues = {
     title: recipe?.title || "",
@@ -201,13 +208,17 @@ export function RecipeForm({
         reader.readAsDataURL(prepared);
       });
 
+      if (base64.length > MAX_ANALYZE_BASE64_LENGTH) {
+        throw new Error("Bild zu groß. Bitte ein kleineres Foto wählen.");
+      }
+
       const res = await fetch("/api/analyze-recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: base64, mimeType }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Analyse fehlgeschlagen");
 
       applyExtraction(data);
@@ -276,82 +287,166 @@ export function RecipeForm({
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-      className="mx-auto max-w-3xl space-y-8"
+      className="recipe-form mx-auto max-w-3xl space-y-5 pb-4 md:space-y-8"
     >
       {mode === "create" && (
-        <Tabs defaultValue="manual">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="manual">Manuell</TabsTrigger>
-            <TabsTrigger value="photo">Foto</TabsTrigger>
-            <TabsTrigger value="url">URL</TabsTrigger>
-          </TabsList>
-          <TabsContent value="photo" className="mt-4">
-            <div className="rounded-xl border-2 border-dashed border-border p-8 text-center">
-              <Camera className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-              <p className="mb-4 text-sm text-muted-foreground">
-                Lade ein Foto deines Rezepts hoch – KI extrahiert Titel, Zutaten und Schritte.
+        <section className="form-import-card overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+          <Tabs value={importTab} onValueChange={setImportTab} defaultValue="manual">
+            <div className="border-b border-border/40 p-3 md:p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary/80">
+                Rezept hinzufügen
               </p>
-              <Input
+              <TabsList className="grid h-11 w-full grid-cols-3 rounded-xl bg-secondary/50 p-1">
+                <TabsTrigger value="manual" className="h-full rounded-lg text-xs sm:text-sm">
+                  Manuell
+                </TabsTrigger>
+                <TabsTrigger value="photo" className="h-full rounded-lg text-xs sm:text-sm">
+                  Foto
+                </TabsTrigger>
+                <TabsTrigger value="url" className="h-full rounded-lg text-xs sm:text-sm">
+                  URL
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="manual" className="px-4 py-5 md:px-6">
+              <p className="text-center text-sm leading-relaxed text-muted-foreground">
+                Trage Titel, Zutaten und Schritte unten selbst ein — oder wechsle zu{" "}
+                <span className="font-medium text-foreground">Foto</span> bzw.{" "}
+                <span className="font-medium text-foreground">URL</span>, um die KI nutzen.
+              </p>
+            </TabsContent>
+
+            <TabsContent value="photo" className="px-4 py-5 md:px-6">
+              {imagePreview && importTab === "photo" ? (
+                <div className="space-y-4">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview}
+                      alt="Rezeptfoto"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">
+                    KI-Daten wurden übernommen. Prüfe das Formular unten.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={analyzing}
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    Anderes Foto wählen
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center px-2 py-4 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                    <Camera className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-base font-semibold">Rezept fotografieren</h3>
+                  <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                    Lade ein Foto hoch — die KI erkennt Titel, Zutaten und Zubereitung.
+                  </p>
+                  <Button
+                    type="button"
+                    className="mt-5 w-full max-w-xs"
+                    disabled={analyzing}
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Wird analysiert…
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Foto auswählen
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              <input
+                ref={photoInputRef}
                 type="file"
                 accept="image/*"
+                capture="environment"
+                className="hidden"
                 disabled={analyzing}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handlePhotoAnalysis(file);
+                  e.target.value = "";
                 }}
               />
-              {analyzing && (
-                <p className="mt-4 flex items-center justify-center gap-2 text-sm text-primary">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Rezept wird analysiert…
+            </TabsContent>
+
+            <TabsContent value="url" className="px-4 py-5 md:px-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                  <Link2 className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-base font-semibold">Von Webseite importieren</h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  Link zu einem Online-Rezept einfügen — die KI übernimmt den Rest.
                 </p>
-              )}
-            </div>
-          </TabsContent>
-          <TabsContent value="url" className="mt-4">
-            <div className="rounded-xl border-2 border-dashed border-border p-8">
-              <Link2 className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-              <p className="mb-4 text-center text-sm text-muted-foreground">
-                Link zu einem Online-Rezept einfügen – KI extrahiert Titel, Zutaten und Schritte.
-              </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              </div>
+              <div className="mt-5 space-y-3">
                 <Input
                   type="url"
                   placeholder="https://www.chefkoch.de/rezept/…"
                   value={importUrl}
                   onChange={(e) => setImportUrl(e.target.value)}
                   disabled={analyzing}
+                  className="h-11"
                 />
                 <Button
                   type="button"
+                  className="w-full"
                   onClick={handleUrlImport}
                   disabled={analyzing || !importUrl.trim()}
                 >
                   {analyzing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Import läuft…
+                    </>
                   ) : (
-                    "Importieren"
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Rezept importieren
+                    </>
                   )}
                 </Button>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </section>
       )}
 
-      <ImageUploader
-        preview={imagePreview}
-        onImageReady={(file, preview) => {
-          setImageFile(file);
-          setImagePreview(preview);
-        }}
-        onRemove={() => {
-          setImageFile(null);
-          setImagePreview(null);
-        }}
-      />
+      {showHeroUploader && (
+        <section className="form-section">
+          <h2 className="form-section-title">Hauptbild</h2>
+          <ImageUploader
+            preview={imagePreview}
+            onImageReady={(file, preview) => {
+              setImageFile(file);
+              setImagePreview(preview);
+            }}
+            onRemove={() => {
+              setImageFile(null);
+              setImagePreview(null);
+            }}
+          />
+        </section>
+      )}
 
-      <div className="space-y-4">
+      <section className="form-section space-y-4">
+        <h2 className="form-section-title">Grunddaten</h2>
         <div className="space-y-2">
           <Label htmlFor="title">Titel</Label>
           <Input id="title" {...form.register("title")} />
@@ -478,14 +573,15 @@ export function RecipeForm({
 
         <div className="space-y-2">
           <Label>Tags</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               placeholder="z.B. Vegan, Schnell…"
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+              className="flex-1"
             />
-            <Button type="button" variant="outline" onClick={addTag}>
+            <Button type="button" variant="outline" onClick={addTag} className="sm:shrink-0">
               Hinzufügen
             </Button>
           </div>
@@ -508,11 +604,11 @@ export function RecipeForm({
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Zutaten</h3>
+      <section className="form-section space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="form-section-title mb-0">Zutaten</h2>
           <Button
             type="button"
             variant="outline"
@@ -524,32 +620,38 @@ export function RecipeForm({
           </Button>
         </div>
         {ingredientFields.map((field, index) => (
-          <div key={field.id} className="flex gap-2">
+          <div
+            key={field.id}
+            className="flex flex-col gap-2 rounded-xl border border-border/40 bg-secondary/20 p-3 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0"
+          >
             <Input
               placeholder="Zutat"
               {...form.register(`ingredients.${index}.name`)}
-              className="flex-[2]"
+              className="flex-[2] bg-background"
             />
-            <Input
-              type="number"
-              placeholder="Menge"
-              {...form.register(`ingredients.${index}.amount`, numberFieldOptions)}
-              className="w-24"
-            />
-            <Input
-              placeholder="Einheit"
-              {...form.register(`ingredients.${index}.unit`)}
-              className="w-24"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeIngredient(index)}
-              disabled={ingredientFields.length <= 1}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Menge"
+                {...form.register(`ingredients.${index}.amount`, numberFieldOptions)}
+                className="w-full flex-1 bg-background sm:w-24"
+              />
+              <Input
+                placeholder="Einheit"
+                {...form.register(`ingredients.${index}.unit`)}
+                className="w-full flex-1 bg-background sm:w-24"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+                onClick={() => removeIngredient(index)}
+                disabled={ingredientFields.length <= 1}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
         {form.formState.errors.ingredients?.message && (
@@ -557,11 +659,11 @@ export function RecipeForm({
             {form.formState.errors.ingredients.message}
           </p>
         )}
-      </div>
+      </section>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Zubereitung</h3>
+      <section className="form-section space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="form-section-title mb-0">Zubereitung</h2>
           <Button
             type="button"
             variant="outline"
@@ -573,19 +675,23 @@ export function RecipeForm({
           </Button>
         </div>
         {stepFields.map((field, index) => (
-          <div key={field.id} className="flex gap-2">
-            <span className="mt-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+          <div
+            key={field.id}
+            className="flex gap-3 rounded-xl border border-border/40 bg-secondary/20 p-3 sm:border-0 sm:bg-transparent sm:p-0"
+          >
+            <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
               {index + 1}
             </span>
             <Textarea
               placeholder={`Schritt ${index + 1}`}
               {...form.register(`steps.${index}.instruction`)}
-              className="flex-1"
+              className="min-h-[4.5rem] flex-1 bg-background"
             />
             <Button
               type="button"
               variant="ghost"
               size="icon"
+              className="shrink-0 self-start"
               onClick={() => removeStep(index)}
               disabled={stepFields.length <= 1}
             >
@@ -598,9 +704,9 @@ export function RecipeForm({
             {form.formState.errors.steps.message}
           </p>
         )}
-      </div>
+      </section>
 
-      <div className="flex gap-3 pb-8">
+      <div className="form-submit-bar flex gap-3 pb-4 md:pb-8">
         <Button type="submit" disabled={loading} className="flex-1">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {mode === "edit" ? "Speichern" : mode === "variant" ? "Variante speichern" : "Rezept erstellen"}

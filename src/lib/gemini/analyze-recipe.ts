@@ -1,4 +1,5 @@
 import { getGeminiModel, parseGeminiJson } from "@/lib/gemini/client";
+import { normalizeImageMimeType } from "@/lib/image-mime";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
 import type { GeminiRecipeExtraction } from "@/types/database";
 
@@ -21,13 +22,14 @@ export async function analyzeRecipeImage(
   mimeType: string
 ): Promise<GeminiRecipeExtraction> {
   const model = getGeminiModel();
+  const normalizedMime = normalizeImageMimeType(mimeType);
 
   const result = await model.generateContent([
     EXTRACTION_PROMPT,
     {
       inlineData: {
         data: imageBase64,
-        mimeType,
+        mimeType: normalizedMime,
       },
     },
   ]);

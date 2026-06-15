@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
-import { Camera, Loader2, X } from "lucide-react";
+import { Camera, ImagePlus, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +37,7 @@ export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploader
     const url = URL.createObjectURL(compressed);
     setImageSrc(url);
     setCropOpen(true);
+    e.target.value = "";
   }
 
   async function handleCropSave() {
@@ -56,23 +57,32 @@ export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploader
   return (
     <div>
       {preview ? (
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-muted">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:aspect-video">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={preview} alt="Rezeptbild" className="h-full w-full object-cover" />
           <Button
             type="button"
             variant="secondary"
             size="icon"
-            className="absolute right-3 top-3"
+            className="absolute right-3 top-3 shadow-sm"
             onClick={onRemove}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       ) : (
-        <label className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 transition-colors hover:bg-muted/50">
-          <Camera className="mb-2 h-8 w-8 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Hauptbild hochladen</span>
+        <label className="image-upload-tile group flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-border/60 bg-secondary/25 px-6 py-8 transition-colors hover:border-primary/30 hover:bg-secondary/40 sm:aspect-video">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 transition-transform group-hover:scale-105">
+            <ImagePlus className="h-6 w-6 text-primary" />
+          </div>
+          <div className="text-center">
+            <span className="block text-sm font-medium text-foreground">
+              Hauptbild hinzufügen
+            </span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Tippe zum Auswählen · optional
+            </span>
+          </div>
           <input
             type="file"
             accept="image/*"
@@ -85,7 +95,10 @@ export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploader
       <Dialog open={cropOpen} onOpenChange={setCropOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Bild zuschneiden</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-4 w-4" />
+              Bild zuschneiden
+            </DialogTitle>
           </DialogHeader>
           <div className="relative h-64">
             {imageSrc && (

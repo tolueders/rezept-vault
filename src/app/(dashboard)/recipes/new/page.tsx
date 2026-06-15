@@ -12,7 +12,12 @@ export default async function NewRecipePage() {
 
   return (
     <div>
-      <h1 className="mb-8 text-2xl font-bold sm:text-3xl">Neues Rezept</h1>
+      <header className="page-header mb-5 md:mb-8">
+        <h1 className="page-title">Neues Rezept</h1>
+        <p className="page-subtitle">
+          Manuell anlegen, per Foto digitalisieren oder von einer Webseite importieren.
+        </p>
+      </header>
       <RecipeForm categories={categories} customCategories={customCategories} />
     </div>
   );
