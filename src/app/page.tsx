@@ -6,13 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import { APP_NAME } from "@/lib/constants";
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect("/recipes");
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) redirect("/recipes");
+  } catch {
+    // Env fehlt – Landing Page trotzdem anzeigen
   }
 
   const features = [
