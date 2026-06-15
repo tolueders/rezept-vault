@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
@@ -27,16 +28,27 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ImageUploader } from "@/components/recipes/image-uploader";
 import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
-import { compressImage } from "@/lib/image-utils";
 import { MAX_ANALYZE_BASE64_LENGTH } from "@/lib/image-mime";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
 import type { CustomCategory, RecipeCategory, RecipeWithDetails } from "@/types/database";
 import { toast } from "sonner";
+
+const ImageUploader = dynamic(
+  () =>
+    import("@/components/recipes/image-uploader").then((mod) => mod.ImageUploader),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex aspect-[4/3] animate-pulse items-center justify-center rounded-xl bg-secondary/40 sm:aspect-video">
+        <span className="text-sm text-muted-foreground">Bild-Upload wird geladen…</span>
+      </div>
+    ),
+  }
+);
 
 const numberFieldOptions = {
   valueAsNumber: true,
@@ -195,6 +207,7 @@ export function RecipeForm({
   async function handlePhotoAnalysis(file: File) {
     setAnalyzing(true);
     try {
+      const { compressImage } = await import("@/lib/image-utils");
       const prepared = await compressImage(file);
       const mimeType = prepared.type || "image/jpeg";
 

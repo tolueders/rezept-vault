@@ -88,6 +88,9 @@ export function getGeminiErrorMessage(error: unknown): string {
   if (msg.includes("Unsupported MIME") || msg.includes("mimeType")) {
     return "Bildformat wird nicht unterstützt. Bitte JPG oder PNG verwenden.";
   }
+  if (msg.includes("reading 'call'") || msg.includes("MODULE_NOT_FOUND")) {
+    return "Server vorübergehend nicht verfügbar. Seite neu laden.";
+  }
 
   return msg.split("\n")[0].slice(0, 200);
 }

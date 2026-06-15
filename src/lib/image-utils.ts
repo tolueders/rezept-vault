@@ -107,5 +107,3 @@ export function getCroppedImage(
     image.src = imageSrc;
   });
 }
-
-import { MAX_ANALYZE_BASE64_LENGTH } from "@/lib/image-mime";
