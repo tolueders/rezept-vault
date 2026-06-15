@@ -1,11 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toggleShoppingItem, deleteShoppingList } from "@/lib/actions/meal-plan";
+import {
+  toggleShoppingItem,
+  deleteShoppingList,
+  addShoppingListItem,
+  removeShoppingListItem,
+  createEmptyShoppingList,
+} from "@/lib/actions/meal-plan";
 import { formatAmount } from "@/lib/recipe-utils";
 import type { ShoppingList, ShoppingListItem } from "@/types/database";
 import { toast } from "sonner";
@@ -17,6 +25,9 @@ interface ShoppingListViewProps {
 
 export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps) {
   const router = useRouter();
+  const [newItemName, setNewItemName] = useState("");
+  const [adding, setAdding] = useState(false);
+
   const activeList = activeListId
     ? lists.find((l) => l.id === activeListId) || lists[0]
     : lists[0];
@@ -34,15 +45,55 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
     router.refresh();
   }
 
+  async function handleRemoveItem(itemId: string) {
+    await removeShoppingListItem(itemId);
+    router.refresh();
+  }
+
+  async function handleAddItem() {
+    if (!activeList || !newItemName.trim()) return;
+    setAdding(true);
+    try {
+      await addShoppingListItem(activeList.id, newItemName.trim());
+      setNewItemName("");
+      toast.success("Hinzugefügt");
+      router.refresh();
+    } catch {
+      toast.error("Fehler beim Hinzufügen");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleCreateList() {
+    setAdding(true);
+    try {
+      const list = await createEmptyShoppingList();
+      toast.success("Neue Liste erstellt");
+      router.push(`/shopping-list?id=${list.id}`);
+      router.refresh();
+    } catch {
+      toast.error("Fehler beim Erstellen");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   if (!activeList) {
     return (
       <div className="py-16 text-center">
         <p className="text-muted-foreground">
-          Noch keine Einkaufsliste. Erstelle eine aus dem Wochenplan.
+          Noch keine Einkaufsliste. Erstelle eine aus dem Wochenplan oder manuell.
         </p>
-        <Button className="mt-4" onClick={() => router.push("/meal-plan")}>
-          Zum Wochenplan
-        </Button>
+        <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          <Button onClick={() => router.push("/meal-plan")}>
+            Zum Wochenplan
+          </Button>
+          <Button variant="outline" onClick={handleCreateList} disabled={adding}>
+            <Plus className="mr-1 h-4 w-4" />
+            Leere Liste erstellen
+          </Button>
+        </div>
       </div>
     );
   }
@@ -51,21 +102,27 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">Einkaufsliste</h1>
           <p className="mt-1 text-muted-foreground">
             {checkedCount} von {activeList.items.length} erledigt
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleDeleteList(activeList.id)}
-        >
-          <Trash2 className="mr-1 h-4 w-4" />
-          Löschen
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleCreateList} disabled={adding}>
+            <Plus className="mr-1 h-4 w-4" />
+            Neue Liste
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDeleteList(activeList.id)}
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            Löschen
+          </Button>
+        </div>
       </div>
 
       {lists.length > 1 && (
@@ -90,15 +147,15 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
         <CardContent className="space-y-1">
           {activeList.items.length === 0 ? (
             <p className="py-8 text-center text-muted-foreground">
-              Keine Einträge
+              Noch keine Einträge – füge unten etwas hinzu
             </p>
           ) : (
             activeList.items
               .sort((a, b) => a.sort_order - b.sort_order)
               .map((item) => (
-                <label
+                <div
                   key={item.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-3 hover:bg-secondary/50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 hover:bg-secondary/50"
                 >
                   <Checkbox
                     checked={item.checked}
@@ -106,17 +163,40 @@ export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps)
                       handleToggle(item.id, checked === true)
                     }
                   />
-                  <span
-                    className={`flex-1 ${item.checked ? "text-muted-foreground line-through" : ""}`}
+                  <label className="flex flex-1 cursor-pointer items-center gap-3">
+                    <span
+                      className={`flex-1 ${item.checked ? "text-muted-foreground line-through" : ""}`}
+                    >
+                      {item.name}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatAmount(item.amount, item.unit)}
+                    </span>
+                  </label>
+                  <button
+                    onClick={() => handleRemoveItem(item.id)}
+                    className="text-muted-foreground hover:text-destructive"
                   >
-                    {item.name}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {formatAmount(item.amount, item.unit)}
-                  </span>
-                </label>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               ))
           )}
+
+          <div className="flex gap-2 border-t border-border pt-4">
+            <Input
+              placeholder="Zutat hinzufügen…"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
+            />
+            <Button
+              onClick={handleAddItem}
+              disabled={adding || !newItemName.trim()}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

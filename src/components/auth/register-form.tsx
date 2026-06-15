@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChefHat, Loader2 } from "lucide-react";
@@ -17,12 +16,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/client";
+import { registerAction } from "@/lib/actions/auth";
 import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth";
 import { toast } from "sonner";
 
 export function RegisterForm() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const {
     register,
@@ -34,26 +32,25 @@ export function RegisterForm() {
 
   async function onSubmit(data: RegisterFormValues) {
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: { display_name: data.display_name },
-      },
-    });
-
-    if (error) {
-      toast.error("Registrierung fehlgeschlagen", { description: error.message });
-      setLoading(false);
-      return;
+    try {
+      const result = await registerAction(
+        data.email,
+        data.password,
+        data.display_name
+      );
+      if (result?.error) {
+        toast.error("Registrierung fehlgeschlagen", { description: result.error });
+        setLoading(false);
+        return;
+      }
+      if (result?.needsConfirmation) {
+        toast.success("Fast geschafft!", { description: result.message });
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // redirect() wirft – Erfolg
     }
-
-    toast.success("Konto erstellt!", {
-      description: "Du wirst weitergeleitet…",
-    });
-    router.push("/recipes");
-    router.refresh();
   }
 
   return (

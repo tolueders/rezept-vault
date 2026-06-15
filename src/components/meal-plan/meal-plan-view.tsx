@@ -18,9 +18,9 @@ import {
   removeMealPlanEntry,
   generateShoppingList,
 } from "@/lib/actions/meal-plan";
-import { WEEKDAYS } from "@/lib/constants";
+import { WEEKDAYS, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from "@/lib/constants";
 import { formatWeekRange } from "@/lib/recipe-utils";
-import type { MealPlanEntry, Recipe } from "@/types/database";
+import type { MealPlanEntry, MealType, Recipe } from "@/types/database";
 import { toast } from "sonner";
 import Link from "next/link";
 import { addDays, format, parseISO } from "date-fns";
@@ -42,6 +42,7 @@ export function MealPlanView({
   const router = useRouter();
   const [addingDay, setAddingDay] = useState<number | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState("");
+  const [selectedMealType, setSelectedMealType] = useState<MealType>("abendessen");
   const [loading, setLoading] = useState(false);
 
   const startDate = parseISO(weekStart);
@@ -51,13 +52,28 @@ export function MealPlanView({
     router.push(`/meal-plan?week=${format(newStart, "yyyy-MM-dd")}`);
   }
 
+  function sortEntries(dayEntries: typeof entries) {
+    return [...dayEntries].sort((a, b) => {
+      const typeOrder =
+        MEAL_TYPE_ORDER.indexOf(a.meal_type) -
+        MEAL_TYPE_ORDER.indexOf(b.meal_type);
+      return typeOrder !== 0 ? typeOrder : a.sort_order - b.sort_order;
+    });
+  }
+
   async function handleAddEntry(dayOfWeek: number) {
     if (!selectedRecipe) return;
     setLoading(true);
     try {
-      await addMealPlanEntry(mealPlanId, dayOfWeek, selectedRecipe);
+      await addMealPlanEntry(
+        mealPlanId,
+        dayOfWeek,
+        selectedRecipe,
+        selectedMealType
+      );
       setAddingDay(null);
       setSelectedRecipe("");
+      setSelectedMealType("abendessen");
       toast.success("Rezept hinzugefügt");
       router.refresh();
     } catch {
@@ -77,7 +93,7 @@ export function MealPlanView({
     setLoading(true);
     try {
       const list = await generateShoppingList(mealPlanId);
-      toast.success("Einkaufsliste erstellt");
+      toast.success("Einkaufsliste aktualisiert");
       router.push(`/shopping-list?id=${list.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler");
@@ -111,7 +127,9 @@ export function MealPlanView({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {WEEKDAYS.map((day, index) => {
-          const dayEntries = entries.filter((e) => e.day_of_week === index);
+          const dayEntries = sortEntries(
+            entries.filter((e) => e.day_of_week === index)
+          );
           const dayDate = addDays(startDate, index);
 
           return (
@@ -128,22 +146,44 @@ export function MealPlanView({
                 {dayEntries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2"
+                    className="flex items-center justify-between gap-2 rounded-lg bg-secondary/50 px-3 py-2"
                   >
-                    <Link
-                      href={`/recipes/${entry.recipe_id}`}
-                      className="text-sm font-medium hover:text-primary"
-                    >
-                      {entry.recipe?.title || "Rezept"}
-                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <Badge variant="outline" className="mb-1 text-xs">
+                        {MEAL_TYPE_LABELS[entry.meal_type]}
+                      </Badge>
+                      <Link
+                        href={`/recipes/${entry.recipe_id}`}
+                        className="block truncate text-sm font-medium hover:text-primary"
+                      >
+                        {entry.recipe?.title || "Rezept"}
+                      </Link>
+                    </div>
                     <button onClick={() => handleRemove(entry.id)}>
-                      <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                      <X className="h-4 w-4 shrink-0 text-muted-foreground hover:text-destructive" />
                     </button>
                   </div>
                 ))}
 
                 {addingDay === index ? (
                   <div className="space-y-2">
+                    <Select
+                      value={selectedMealType}
+                      onValueChange={(v) =>
+                        setSelectedMealType((v as MealType) ?? "abendessen")
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Mahlzeit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MEAL_TYPE_ORDER.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {MEAL_TYPE_LABELS[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select
                       value={selectedRecipe}
                       onValueChange={(v) => setSelectedRecipe(v ?? "")}

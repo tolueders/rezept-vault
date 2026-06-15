@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChefHat, Loader2 } from "lucide-react";
@@ -17,13 +16,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/client";
+import { loginAction } from "@/lib/actions/auth";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { APP_NAME } from "@/lib/constants";
 import { toast } from "sonner";
 
 export function LoginForm() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const {
     register,
@@ -35,21 +33,15 @@ export function LoginForm() {
 
   async function onSubmit(data: LoginFormValues) {
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-
-    if (error) {
-      toast.error("Anmeldung fehlgeschlagen", { description: error.message });
-      setLoading(false);
-      return;
+    try {
+      const result = await loginAction(data.email, data.password);
+      if (result?.error) {
+        toast.error("Anmeldung fehlgeschlagen", { description: result.error });
+        setLoading(false);
+      }
+    } catch {
+      // redirect() wirft – Erfolg
     }
-
-    toast.success("Willkommen zurück!");
-    router.push("/recipes");
-    router.refresh();
   }
 
   return (

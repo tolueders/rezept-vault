@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   BookOpen,
   Calendar,
@@ -16,10 +16,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { createClient } from "@/lib/supabase/client";
+import { logoutAction } from "@/lib/actions/auth";
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const iconMap = {
   BookOpen,
@@ -32,14 +31,13 @@ const iconMap = {
 
 export function AppHeader() {
   const pathname = usePathname();
-  const router = useRouter();
 
   async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    toast.success("Erfolgreich abgemeldet");
-    router.push("/login");
-    router.refresh();
+    try {
+      await logoutAction();
+    } catch {
+      // redirect() wirft
+    }
   }
 
   return (

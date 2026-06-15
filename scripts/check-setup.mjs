@@ -60,26 +60,25 @@ async function main() {
   console.log("\n🔍 RezeptVault Setup-Check\n");
 
   const env = loadEnv();
-  const url = env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
+  const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
   const geminiKey = env.GEMINI_API_KEY;
 
   let allGood = true;
 
   // Supabase URL
   if (hasPlaceholder(url)) {
-    console.log("⚠️  NEXT_PUBLIC_SUPABASE_URL – noch nicht konfiguriert");
+    console.log("⚠️  SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL – noch nicht konfiguriert");
     allGood = false;
   } else {
-    console.log("✅ NEXT_PUBLIC_SUPABASE_URL gesetzt");
+    console.log("✅ Supabase URL gesetzt");
   }
 
-  // Anon Key
   if (hasPlaceholder(anonKey)) {
-    console.log("⚠️  NEXT_PUBLIC_SUPABASE_ANON_KEY – noch nicht konfiguriert");
+    console.log("⚠️  SUPABASE_ANON_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY – noch nicht konfiguriert");
     allGood = false;
   } else {
-    console.log("✅ NEXT_PUBLIC_SUPABASE_ANON_KEY gesetzt");
+    console.log("✅ Supabase Anon Key gesetzt");
   }
 
   // Gemini

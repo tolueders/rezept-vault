@@ -315,17 +315,22 @@ export function RecipeForm({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="is_public"
-            checked={form.watch("is_public")}
-            onCheckedChange={(checked) =>
-              form.setValue("is_public", checked === true)
-            }
-          />
-          <Label htmlFor="is_public" className="cursor-pointer">
-            Rezept öffentlich teilen
-          </Label>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="is_public"
+              checked={form.watch("is_public")}
+              onCheckedChange={(checked) =>
+                form.setValue("is_public", checked === true)
+              }
+            />
+            <Label htmlFor="is_public" className="cursor-pointer">
+              Rezept öffentlich teilen
+            </Label>
+          </div>
+          <p className="pl-6 text-xs text-muted-foreground">
+            Öffentliche Rezepte erscheinen unter Entdecken und können geteilt werden.
+          </p>
         </div>
 
         <div className="space-y-2">

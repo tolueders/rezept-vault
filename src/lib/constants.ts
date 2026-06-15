@@ -13,6 +13,13 @@ export const MEAL_TYPE_LABELS = {
   snack: "Snack",
 } as const;
 
+export const MEAL_TYPE_ORDER = [
+  "fruehstueck",
+  "mittagessen",
+  "abendessen",
+  "snack",
+] as const;
+
 export const WEEKDAYS = [
   "Montag",
   "Dienstag",

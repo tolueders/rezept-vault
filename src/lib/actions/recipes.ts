@@ -194,8 +194,15 @@ export async function rateRecipe(recipeId: string, rating: number) {
   );
 
   if (error) throw new Error(error.message);
+
+  const { data: recipe } = await supabase
+    .from("recipes")
+    .select("slug")
+    .eq("id", recipeId)
+    .maybeSingle();
+
   revalidatePath(`/recipes/${recipeId}`);
-  revalidatePath(`/recipe`);
+  if (recipe?.slug) revalidatePath(`/recipe/${recipe.slug}`);
 }
 
 export async function addComment(recipeId: string, content: string) {
