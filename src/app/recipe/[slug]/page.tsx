@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { RecipeDetail } from "@/components/recipes/recipe-detail";
-import { getRecipeBySlug, getRecipeComments } from "@/lib/queries/recipes";
+import { getRecipeBySlug, getRecipeComments, getUserRecipeCopyId } from "@/lib/queries/recipes";
 import { createClient } from "@/lib/supabase/server";
 import { APP_NAME } from "@/lib/constants";
 
@@ -32,6 +32,9 @@ export default async function PublicRecipePage({
   if (!recipe) notFound();
 
   const comments = await getRecipeComments(recipe.id);
+  const userCopyId = user
+    ? await getUserRecipeCopyId(user.id, recipe.id)
+    : null;
 
   return (
     <div
@@ -45,6 +48,7 @@ export default async function PublicRecipePage({
           currentUserId={user?.id}
           isOwner={user?.id === recipe.user_id}
           isPublicView
+          userCopyId={userCopyId}
         />
       </main>
     </div>

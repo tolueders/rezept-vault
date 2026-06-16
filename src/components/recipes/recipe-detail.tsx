@@ -14,10 +14,21 @@ import {
   Trash2,
   Users,
   ChefHat,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { StarRating } from "@/components/recipes/star-rating";
 import { PortionCalculator } from "@/components/recipes/portion-calculator";
 import { CommentsSection } from "@/components/recipes/comments-section";
@@ -42,6 +53,7 @@ interface RecipeDetailProps {
   currentUserId?: string;
   isOwner: boolean;
   isPublicView?: boolean;
+  userCopyId?: string | null;
   variants?: Parameters<typeof RecipeVariants>[0]["variants"];
 }
 
@@ -51,12 +63,19 @@ export function RecipeDetail({
   currentUserId,
   isOwner,
   isPublicView = false,
+  userCopyId = null,
   variants = [],
 }: RecipeDetailProps) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(recipe.is_favorited || false);
   const [userRating, setUserRating] = useState(recipe.user_rating || 0);
   const [cookMode, setCookMode] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [copying, setCopying] = useState(false);
+
+  const canCopyToCollection =
+    recipe.is_public && !!currentUserId && !isOwner && !userCopyId;
 
   async function handleFavorite() {
     if (!currentUserId) {
@@ -79,11 +98,19 @@ export function RecipeDetail({
     router.refresh();
   }
 
-  async function handleDelete() {
-    if (!confirm("Rezept wirklich löschen?")) return;
-    await deleteRecipe(recipe.id);
-    toast.success("Rezept gelöscht");
-    router.push("/recipes");
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await deleteRecipe(recipe.id);
+      toast.success("Rezept gelöscht");
+      setDeleteOpen(false);
+      router.push("/recipes");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fehler beim Löschen");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleCopy() {
@@ -91,9 +118,17 @@ export function RecipeDetail({
       toast.error("Bitte melde dich an");
       return;
     }
-    const copy = await copyRecipeToCollection(recipe.id);
-    toast.success("Rezept übernommen!");
-    router.push(`/recipes/${copy.id}`);
+    setCopying(true);
+    try {
+      const copy = await copyRecipeToCollection(recipe.id);
+      toast.success("Rezept übernommen!");
+      router.push(`/recipes/${copy.id}`);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fehler beim Übernehmen");
+    } finally {
+      setCopying(false);
+    }
   }
 
   async function handleShare() {
@@ -189,26 +224,32 @@ export function RecipeDetail({
           {!isPublicView && isOwner && (
             <>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/recipes/${recipe.id}/variant`}>
-                  Variante
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
                 <Link href={`/recipes/${recipe.id}/edit`}>
                   <Edit className="mr-1 h-4 w-4" />
                   Bearbeiten
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDelete}>
+              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
                 <Trash2 className="mr-1 h-4 w-4" />
                 Löschen
               </Button>
             </>
           )}
-          {isPublicView && currentUserId && !isOwner && (
-            <Button size="sm" onClick={handleCopy}>
-              <Copy className="mr-1 h-4 w-4" />
+          {canCopyToCollection && (
+            <Button size="sm" onClick={handleCopy} disabled={copying}>
+              {copying ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <Copy className="mr-1 h-4 w-4" />
+              )}
               In meine Sammlung übernehmen
+            </Button>
+          )}
+          {userCopyId && !isOwner && (
+            <Button variant="secondary" size="sm" asChild>
+              <Link href={`/recipes/${userCopyId}`}>
+                In deiner Sammlung ansehen
+              </Link>
             </Button>
           )}
           {currentUserId && !isPublicView && (
@@ -250,20 +291,29 @@ export function RecipeDetail({
               Bearbeiten
             </Link>
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" asChild>
-            <Link href={`/recipes/${recipe.id}/variant`}>Variante</Link>
-          </Button>
-          <Button variant="outline" size="icon" className="shrink-0" onClick={handleDelete}>
+          <Button variant="outline" size="icon" className="shrink-0" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       )}
 
-      {isPublicView && currentUserId && !isOwner && (
+      {canCopyToCollection && (
         <div className="mb-4 md:hidden">
-          <Button className="w-full" onClick={handleCopy}>
-            <Copy className="mr-2 h-4 w-4" />
+          <Button className="w-full" onClick={handleCopy} disabled={copying}>
+            {copying ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Copy className="mr-2 h-4 w-4" />
+            )}
             In meine Sammlung übernehmen
+          </Button>
+        </div>
+      )}
+
+      {userCopyId && !isOwner && (
+        <div className="mb-4 md:hidden">
+          <Button variant="secondary" className="w-full" asChild>
+            <Link href={`/recipes/${userCopyId}`}>In deiner Sammlung ansehen</Link>
           </Button>
         </div>
       )}
@@ -347,6 +397,22 @@ export function RecipeDetail({
         >
           <Share2 className="h-4 w-4" />
         </Button>
+        {canCopyToCollection && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            onClick={handleCopy}
+            disabled={copying}
+            aria-label="In Sammlung übernehmen"
+          >
+            {copying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        )}
         {currentUserId && !isPublicView && (
           <Button
             variant="outline"
@@ -361,6 +427,32 @@ export function RecipeDetail({
           </Button>
         )}
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rezept löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              „{recipe.title}“ wird unwiderruflich gelöscht. Das kann nicht rückgängig
+              gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Endgültig löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </article>
   );
 }

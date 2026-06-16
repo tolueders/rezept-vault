@@ -166,6 +166,15 @@ export async function deleteRecipe(id: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
 
+  const { data: recipe } = await supabase
+    .from("recipes")
+    .select("id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!recipe) throw new Error("Rezept nicht gefunden");
+
   const { error } = await supabase
     .from("recipes")
     .delete()
@@ -173,8 +182,11 @@ export async function deleteRecipe(id: string) {
     .eq("user_id", user.id);
 
   if (error) throw new Error(error.message);
+
   revalidatePath("/recipes");
   revalidatePath("/discover");
+  revalidatePath("/favorites");
+  revalidatePath("/meal-plan");
 }
 
 export async function toggleFavorite(recipeId: string) {
@@ -291,6 +303,15 @@ export async function copyRecipeToCollection(sourceRecipeId: string) {
     .single();
 
   if (!source) throw new Error("Rezept nicht gefunden");
+
+  const { data: existingCopy } = await supabase
+    .from("recipes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("parent_recipe_id", sourceRecipeId)
+    .maybeSingle();
+
+  if (existingCopy) return existingCopy;
 
   const [{ data: tags }, { data: ingredients }, { data: steps }] =
     await Promise.all([

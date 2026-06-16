@@ -70,6 +70,20 @@ export async function getRecipeById(id: string): Promise<RecipeWithDetails | nul
   } as RecipeWithDetails;
 }
 
+export async function getUserRecipeCopyId(
+  userId: string,
+  sourceRecipeId: string
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("recipes")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("parent_recipe_id", sourceRecipeId)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 export async function getRecipeBySlug(slug: string): Promise<RecipeWithDetails | null> {
   const supabase = await createClient();
 
