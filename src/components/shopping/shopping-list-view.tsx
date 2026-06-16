@@ -68,10 +68,10 @@ function ItemRow({
         onCheckedChange={(checked) => onToggle(item.id, checked === true)}
         className="h-5 w-5"
       />
-      <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-3 py-1">
+      <label className="flex min-h-10 min-w-0 flex-1 cursor-pointer items-center gap-3 py-1">
         <span
           className={cn(
-            "flex-1 text-base",
+            "min-w-0 flex-1 text-base",
             item.checked && "text-muted-foreground line-through"
           )}
         >
@@ -108,24 +108,24 @@ function DayChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-w-[4.5rem] flex-col items-center rounded-xl border px-3 py-2.5 text-center transition-colors",
+        "flex min-w-0 flex-col items-center rounded-xl py-2 text-center transition-colors",
         selected
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-background hover:bg-muted/50",
-        day.isToday && !selected && "border-primary/40"
+          ? "bg-primary/10 ring-1 ring-primary/25 text-primary"
+          : "bg-secondary/40 hover:bg-secondary/70",
+        day.isToday && !selected && "ring-1 ring-primary/20"
       )}
     >
-      <span className="text-xs font-medium uppercase tracking-wide opacity-80">
+      <span className="text-[10px] font-medium uppercase text-muted-foreground">
         {day.weekday}
       </span>
-      <span className="text-lg font-semibold leading-tight">{day.label}</span>
+      <span className="mt-0.5 text-sm font-semibold leading-none">
+        {day.label.replace(".", "")}
+      </span>
       {day.isToday && (
-        <span className="mt-0.5 text-[10px] font-medium uppercase">Heute</span>
+        <span className="mt-0.5 text-[9px] font-medium uppercase">Heute</span>
       )}
       {recipeCount > 0 && (
-        <span className="mt-1 text-[10px] text-muted-foreground">
-          {recipeCount} {recipeCount === 1 ? "Rezept" : "Rezepte"}
-        </span>
+        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
       )}
     </button>
   );
@@ -275,8 +275,8 @@ export function ShoppingListView({
 
   if (shopMode) {
     return (
-      <div>
-        <header className="page-header">
+      <div className="page-content">
+        <header className="page-header !mb-0">
           <Button
             variant="ghost"
             size="sm"
@@ -306,8 +306,8 @@ export function ShoppingListView({
           </Card>
         ) : (
           <>
-            <Card className="mb-6 border-border/50 shadow-sm">
-              <CardContent className="space-y-1 pt-5">
+            <Card className="border-border/50 shadow-sm md:mb-0">
+              <CardContent className="space-y-1 pt-5 pb-28 md:pb-5">
                 {mergedShopItems.map((item) => {
                   const checked = isMergedItemChecked(item);
                   const sourceIds = item.sources.map((s) => s.itemId);
@@ -323,10 +323,10 @@ export function ShoppingListView({
                         }
                         className="h-6 w-6"
                       />
-                      <label className="flex min-h-12 flex-1 cursor-pointer items-center gap-3 py-1">
+                      <label className="flex min-h-12 min-w-0 flex-1 cursor-pointer items-center gap-3 py-1">
                         <span
                           className={cn(
-                            "flex-1 text-lg",
+                            "min-w-0 flex-1 text-base sm:text-lg",
                             checked && "text-muted-foreground line-through"
                           )}
                         >
@@ -342,9 +342,9 @@ export function ShoppingListView({
               </CardContent>
             </Card>
 
-            <div className="sticky bottom-4 space-y-3">
+            <div className="shop-action-bar space-y-2 md:space-y-3">
               <Button
-                className="h-12 w-full text-base"
+                className="mx-auto h-12 w-full max-w-7xl text-base"
                 size="lg"
                 disabled={finishingShop}
                 onClick={() =>
@@ -363,7 +363,7 @@ export function ShoppingListView({
                 Einkauf abschließen
               </Button>
               {totalShopCount - checkedShopCount > 0 && (
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="mx-auto max-w-7xl text-center text-sm text-muted-foreground">
                   Nicht abgehakte Zutaten bleiben auf deinen Listen.
                 </p>
               )}
@@ -408,8 +408,8 @@ export function ShoppingListView({
   }
 
   return (
-    <div>
-      <header className="page-header">
+    <div className="page-content">
+      <header className="page-header !mb-0">
         <h1 className="page-title">Einkaufsliste</h1>
         <p className="page-subtitle">
           Zutaten aus dem Wochenplan und eigene Ergänzungen
@@ -417,7 +417,7 @@ export function ShoppingListView({
       </header>
 
       <Button
-        className="mb-6 h-12 w-full text-base sm:mb-8"
+        className="h-12 w-full text-base"
         size="lg"
         disabled={allItems.length === 0}
         onClick={() => router.push("/shopping-list?mode=shop")}
@@ -431,7 +431,7 @@ export function ShoppingListView({
         )}
       </Button>
 
-      <Card className="mb-6 border-border/50 shadow-sm">
+      <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -446,7 +446,7 @@ export function ShoppingListView({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="grid grid-cols-7 gap-1.5">
             {selectableDays.map((day) => (
               <DayChip
                 key={day.date}

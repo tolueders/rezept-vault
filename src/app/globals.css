@@ -234,6 +234,42 @@ body {
 }
 
 /* Seiten-Layout */
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .page-content {
+    gap: 1.5rem;
+  }
+}
+
+/* Fixierte Aktionsleiste im Einkaufsmodus – oberhalb der Bottom-Nav */
+.shop-action-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  border-top: 1px solid color-mix(in oklch, var(--border), transparent 15%);
+  background: color-mix(in oklch, var(--background), transparent 5%);
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 768px) {
+  .shop-action-bar {
+    position: static;
+    inset: auto;
+    border-top: none;
+    background: transparent;
+    padding: 0;
+    backdrop-filter: none;
+  }
+}
+
 .page-header {
   margin-bottom: 1.25rem;
 }
