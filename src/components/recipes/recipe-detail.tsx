@@ -8,7 +8,6 @@ import {
   Clock,
   Copy,
   Edit,
-  ExternalLink,
   Heart,
   Share2,
   Trash2,
@@ -61,6 +60,7 @@ export function RecipeDetail({
   const [userRating, setUserRating] = useState(recipe.user_rating || 0);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [publicLinkCopied, setPublicLinkCopied] = useState(false);
 
   const cookHref = isPublicView
     ? `/recipe/${recipe.slug}/cook`
@@ -116,6 +116,18 @@ export function RecipeDetail({
       toast.error(err instanceof Error ? err.message : "Fehler beim Übernehmen");
     } finally {
       setCopying(false);
+    }
+  }
+
+  async function handleCopyPublicLink() {
+    const url = `${window.location.origin}/recipe/${recipe.slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setPublicLinkCopied(true);
+      toast.success("Öffentlicher Link kopiert");
+      window.setTimeout(() => setPublicLinkCopied(false), 2500);
+    } catch {
+      toast.error("Link konnte nicht kopiert werden");
     }
   }
 
@@ -353,16 +365,18 @@ export function RecipeDetail({
         currentUserId={currentUserId}
       />
 
-      {recipe.is_public && (
-        <div className="mt-8 mb-2 rounded-xl bg-secondary/50 p-4 text-center text-sm text-muted-foreground">
-          <ExternalLink className="mx-auto mb-2 h-5 w-5" />
-          <p className="mb-1">Öffentliche URL</p>
-          <Link
-            href={`/recipe/${recipe.slug}`}
-            className="break-all font-medium text-primary underline-offset-4 hover:underline"
+      {recipe.is_public && isOwner && (
+        <div className="mt-8 mb-2 rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
+          <p className="text-sm text-muted-foreground">
+            Dieses Rezept ist öffentlich und kann geteilt werden.
+          </p>
+          <Button
+            variant={publicLinkCopied ? "secondary" : "outline"}
+            className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
+            onClick={handleCopyPublicLink}
           >
-            /recipe/{recipe.slug}
-          </Link>
+            {publicLinkCopied ? "Link kopiert" : "Öffentlichen Link kopieren"}
+          </Button>
         </div>
       )}
 
