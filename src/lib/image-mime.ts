@@ -1,5 +1,5 @@
-/** Max. Base64-Länge (~3 MB Bild) – Vercel Request-Limit beachten. */
-export const MAX_ANALYZE_BASE64_LENGTH = 4_000_000;
+/** Max. Base64-Länge für KI-Scan (~800px JPEG). */
+export const MAX_ANALYZE_BASE64_LENGTH = 1_200_000;
 
 export function normalizeImageMimeType(mimeType: string): string {
   const normalized = mimeType.toLowerCase().split(";")[0].trim();

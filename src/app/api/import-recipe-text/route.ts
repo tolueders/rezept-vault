@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseRecipeText } from "@/lib/gemini/import-from-text";
 import { getGeminiErrorMessage } from "@/lib/gemini/client";
+import { hashContent, withScanCache } from "@/lib/gemini/scan-cache";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -21,7 +22,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text fehlt" }, { status: 400 });
     }
 
-    const extraction = await parseRecipeText(text.trim());
+    const normalized = text.trim();
+    const contentHash = hashContent(normalized);
+    const extraction = await withScanCache(user.id, contentHash, "text", () =>
+      parseRecipeText(normalized)
+    );
+
     return NextResponse.json(extraction);
   } catch (error) {
     console.error("Text import error:", error);

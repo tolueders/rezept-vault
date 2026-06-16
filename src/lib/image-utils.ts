@@ -1,21 +1,46 @@
 import imageCompression from "browser-image-compression";
 
-const DEFAULT_OPTIONS = {
+/** Titelbild-Upload – höhere Qualität */
+const UPLOAD_OPTIONS = {
   maxSizeMB: 0.8,
   maxWidthOrHeight: 1600,
   useWebWorker: true,
   fileType: "image/jpeg" as const,
 };
 
+/** KI-Scan – klein halten (Token/Kosten) */
+export const ANALYZE_IMAGE_MAX_EDGE = 800;
+
+const ANALYZE_OPTIONS = {
+  maxSizeMB: 0.35,
+  maxWidthOrHeight: ANALYZE_IMAGE_MAX_EDGE,
+  useWebWorker: true,
+  fileType: "image/jpeg" as const,
+  initialQuality: 0.82,
+};
+
+async function compressWithOptions(
+  file: File,
+  options: typeof UPLOAD_OPTIONS
+): Promise<File> {
+  try {
+    const compressed = await imageCompression(file, options);
+    return new File([compressed], file.name.replace(/\.[^.]+$/, ".jpg"), {
+      type: "image/jpeg",
+    });
+  } catch {
+    return convertImageViaCanvas(file, options.maxWidthOrHeight);
+  }
+}
+
 /** Konvertiert HEIC/HEIF und andere Formate per Canvas zu JPEG (Safari/iPhone). */
-function convertImageViaCanvas(file: File): Promise<File> {
+function convertImageViaCanvas(file: File, maxEdge: number): Promise<File> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
 
     image.onload = () => {
       URL.revokeObjectURL(url);
-      const maxEdge = 1600;
       let { width, height } = image;
       if (width > maxEdge || height > maxEdge) {
         const scale = maxEdge / Math.max(width, height);
@@ -60,14 +85,11 @@ function convertImageViaCanvas(file: File): Promise<File> {
 }
 
 export async function compressImage(file: File): Promise<File> {
-  try {
-    const compressed = await imageCompression(file, DEFAULT_OPTIONS);
-    return new File([compressed], file.name.replace(/\.[^.]+$/, ".jpg"), {
-      type: "image/jpeg",
-    });
-  } catch {
-    return convertImageViaCanvas(file);
-  }
+  return compressWithOptions(file, UPLOAD_OPTIONS);
+}
+
+export async function compressImageForAnalysis(file: File): Promise<File> {
+  return compressWithOptions(file, ANALYZE_OPTIONS);
 }
 
 export function getCroppedImage(

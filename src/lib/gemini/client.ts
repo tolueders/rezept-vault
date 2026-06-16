@@ -52,6 +52,7 @@ export function getGeminiModel() {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
+  // Stateless: ein generateContent-Aufruf pro Scan, keine Chat-Historie.
   return genAI.getGenerativeModel({
     model: GEMINI_MODEL,
     generationConfig: {

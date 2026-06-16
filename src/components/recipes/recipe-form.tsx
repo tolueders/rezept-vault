@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,10 +31,19 @@ import {
 import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
-import { MAX_ANALYZE_BASE64_LENGTH } from "@/lib/image-mime";
+import {
+  scanRecipePhoto,
+  scanRecipeText,
+  scanRecipeUrl,
+} from "@/lib/resolve-scan.client";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
-import type { CustomCategory, RecipeCategory, RecipeWithDetails } from "@/types/database";
+import type {
+  CustomCategory,
+  GeminiRecipeExtraction,
+  RecipeCategory,
+  RecipeWithDetails,
+} from "@/types/database";
 import { toast } from "sonner";
 
 const ImageUploader = dynamic(
@@ -87,6 +96,7 @@ export function RecipeForm({
   );
   const [tagInput, setTagInput] = useState("");
   const [importTab, setImportTab] = useState<ImportMode>("manual");
+  const scanMemoryRef = useRef(new Map<string, GeminiRecipeExtraction>());
 
   const showHeroUploader = mode !== "create" || importTab !== "photo";
 
@@ -220,15 +230,12 @@ export function RecipeForm({
     if (importText.trim().length < 20) return;
     setAnalyzing(true);
     try {
-      const res = await fetch("/api/import-recipe-text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: importText.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Import fehlgeschlagen");
+      const { data, fromCache } = await scanRecipeText(
+        importText,
+        scanMemoryRef.current
+      );
       applyExtraction(data);
-      toast.success("Rezept erkannt!", {
+      toast.success(fromCache ? "Rezept aus Cache geladen" : "Rezept erkannt!", {
         description: "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
     } catch (err) {
@@ -242,15 +249,12 @@ export function RecipeForm({
     if (!importUrl.trim()) return;
     setAnalyzing(true);
     try {
-      const res = await fetch("/api/import-recipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: importUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Import fehlgeschlagen");
+      const { data, fromCache } = await scanRecipeUrl(
+        importUrl,
+        scanMemoryRef.current
+      );
       applyExtraction(data);
-      toast.success("Rezept importiert!", {
+      toast.success(fromCache ? "Rezept aus Cache geladen" : "Rezept importiert!", {
         description: "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
     } catch (err) {
@@ -263,37 +267,13 @@ export function RecipeForm({
   async function handlePhotoAnalysis(file: File) {
     setAnalyzing(true);
     try {
-      const { compressImage } = await import("@/lib/image-utils");
-      const prepared = await compressImage(file);
-      const mimeType = prepared.type || "image/jpeg";
-
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(",")[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(prepared);
-      });
-
-      if (base64.length > MAX_ANALYZE_BASE64_LENGTH) {
-        throw new Error("Bild zu groß. Bitte ein kleineres Foto wählen.");
-      }
-
-      const res = await fetch("/api/analyze-recipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64, mimeType }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Analyse fehlgeschlagen");
-
+      const { data, fromCache, previewUrl } = await scanRecipePhoto(
+        file,
+        scanMemoryRef.current
+      );
       applyExtraction(data);
-
-      setAnalysisPhotoPreview(URL.createObjectURL(prepared));
-      toast.success("Rezept erkannt!", {
+      setAnalysisPhotoPreview(previewUrl);
+      toast.success(fromCache ? "Foto bereits analysiert" : "Rezept erkannt!", {
         description: "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
     } catch (err) {

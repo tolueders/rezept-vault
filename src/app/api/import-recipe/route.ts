@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAndParseRecipeUrl } from "@/lib/gemini/import-from-url";
 import { getGeminiErrorMessage } from "@/lib/gemini/client";
+import { hashContent, withScanCache } from "@/lib/gemini/scan-cache";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -21,7 +22,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Link fehlt" }, { status: 400 });
     }
 
-    const extraction = await fetchAndParseRecipeUrl(url.trim());
+    const normalized = url.trim().toLowerCase();
+    const contentHash = hashContent(normalized);
+    const extraction = await withScanCache(user.id, contentHash, "url", () =>
+      fetchAndParseRecipeUrl(url.trim())
+    );
+
     return NextResponse.json(extraction);
   } catch (error) {
     console.error("URL import error:", error);

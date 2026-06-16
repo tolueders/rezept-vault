@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeRecipeImage } from "@/lib/gemini/analyze-recipe";
 import { getGeminiErrorMessage } from "@/lib/gemini/client";
+import { hashContent, withScanCache } from "@/lib/gemini/scan-cache";
 import { MAX_ANALYZE_BASE64_LENGTH } from "@/lib/image-mime";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,7 +32,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const extraction = await analyzeRecipeImage(image, mimeType);
+    const contentHash = hashContent(image);
+    const extraction = await withScanCache(user.id, contentHash, "image", () =>
+      analyzeRecipeImage(image, mimeType)
+    );
+
     return NextResponse.json(extraction);
   } catch (error) {
     console.error("Gemini analysis error:", error);
