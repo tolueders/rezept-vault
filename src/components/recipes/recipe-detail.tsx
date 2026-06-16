@@ -5,10 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  Check,
   Clock,
   Copy,
   Edit,
   Heart,
+  Link2,
   Share2,
   Trash2,
   Users,
@@ -167,8 +169,8 @@ export function RecipeDetail({
       className={cn(
         "animate-fade-in min-w-0 md:pb-0",
         isPublicView
-          ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-          : "pb-[calc(10rem+env(safe-area-inset-bottom))]"
+          ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+          : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
       )}
     >
       <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
@@ -376,88 +378,82 @@ export function RecipeDetail({
 
       <Separator className="my-8" />
 
+      <Button className="mb-8 h-11 w-full rounded-xl md:hidden" asChild>
+        <Link href={cookHref}>
+          <ChefHat className="mr-2 h-4 w-4 shrink-0" />
+          Kochmodus
+        </Link>
+      </Button>
+
       <CommentsSection
         recipeId={recipe.id}
         comments={comments}
         currentUserId={currentUserId}
       />
 
-      {!isPublicView && isOwner && !isPublic && (
-        <div className="mt-8 mb-2 rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
-          <p className="text-sm text-muted-foreground">
-            Teilen ist erst möglich, wenn das Rezept öffentlich ist.
-          </p>
-          <Button
-            className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
-            onClick={handlePublish}
-            disabled={publishing}
-          >
-            {publishing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Wird veröffentlicht…
-              </>
-            ) : (
-              "Veröffentlichen"
-            )}
-          </Button>
-        </div>
-      )}
-
-      {isPublic && isOwner && !isPublicView && (
-        <div className="mt-8 mb-2 rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
-          <p className="text-sm text-muted-foreground">
-            Dieses Rezept ist öffentlich und kann geteilt werden.
-          </p>
-          <Button
-            variant={publicLinkCopied ? "secondary" : "outline"}
-            className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
-            onClick={handleCopyPublicLink}
-          >
-            {publicLinkCopied ? "Link kopiert" : "Öffentlichen Link kopieren"}
-          </Button>
-        </div>
-      )}
-
-      <div
-        className={cn(
-          "recipe-mobile-bar md:hidden",
-          isPublicView ? "recipe-mobile-bar--docked" : "recipe-mobile-bar--above-nav"
-        )}
-      >
-        <div className="mx-auto flex min-w-0 max-w-7xl items-center gap-2">
-          <Button className="h-11 min-w-0 flex-1" asChild>
-            <Link href={cookHref}>
-              <ChefHat className="mr-2 h-4 w-4 shrink-0" />
-              Kochmodus
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 shrink-0"
-            onClick={handleShare}
-            aria-label="Teilen"
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
-          {canCopyToCollection && (
+      <div className="mt-8 space-y-4 mb-2">
+        {!isPublicView && isOwner && !isPublic && (
+          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
+            <p className="text-sm text-muted-foreground">
+              Teilen ist erst möglich, wenn das Rezept öffentlich ist.
+            </p>
             <Button
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 shrink-0"
-              onClick={handleCopy}
-              disabled={copying}
-              aria-label="In Sammlung übernehmen"
+              className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
+              onClick={handlePublish}
+              disabled={publishing}
             >
-              {copying ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+              {publishing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Wird veröffentlicht…
+                </>
               ) : (
-                <Copy className="h-4 w-4" />
+                "Veröffentlichen"
               )}
             </Button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {isPublic && isOwner && !isPublicView && (
+          <div className="flex gap-2">
+            <Button
+              variant={publicLinkCopied ? "secondary" : "outline"}
+              className="h-11 min-w-0 flex-1 rounded-xl"
+              onClick={handleCopyPublicLink}
+            >
+              {publicLinkCopied ? (
+                <>
+                  <Check className="mr-2 h-4 w-4 shrink-0" />
+                  Link kopiert
+                </>
+              ) : (
+                <>
+                  <Link2 className="mr-2 h-4 w-4 shrink-0" />
+                  Link kopieren
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              className="h-11 min-w-0 flex-1 rounded-xl"
+              onClick={handleShare}
+            >
+              <Share2 className="mr-2 h-4 w-4 shrink-0" />
+              Teilen
+            </Button>
+          </div>
+        )}
+
+        {(isPublicView || (isPublic && !isOwner)) && (
+          <Button
+            variant="outline"
+            className="h-11 w-full rounded-xl md:hidden"
+            onClick={handleShare}
+          >
+            <Share2 className="mr-2 h-4 w-4 shrink-0" />
+            Teilen
+          </Button>
+        )}
       </div>
 
       <ConfirmDialog
