@@ -41,7 +41,7 @@ export async function fetchAndParseRecipeUrl(
   try {
     parsedUrl = new URL(url);
   } catch {
-    throw new Error("Ungültige URL");
+    throw new Error("Ungültiger Link");
   }
 
   if (!["http:", "https:"].includes(parsedUrl.protocol)) {

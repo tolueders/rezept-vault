@@ -15,7 +15,7 @@ export default async function NewRecipePage() {
       <header className="page-header mb-5 md:mb-8">
         <h1 className="page-title">Neues Rezept</h1>
         <p className="page-subtitle">
-          Manuell anlegen, per Foto digitalisieren oder von einer Webseite importieren.
+          Manuell anlegen, Text einfügen, per Foto digitalisieren oder von einer Webseite importieren.
         </p>
       </header>
       <RecipeForm categories={categories} customCategories={customCategories} />

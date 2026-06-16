@@ -1,18 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Camera,
-  Link2,
   Loader2,
   Plus,
   Trash2,
   X,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  RecipeImportPanel,
+  type ImportMode,
+} from "@/components/recipes/recipe-import-panel";
 import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
@@ -77,13 +77,13 @@ export function RecipeForm({
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [importUrl, setImportUrl] = useState("");
+  const [importText, setImportText] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
     recipe?.image_url || null
   );
   const [tagInput, setTagInput] = useState("");
-  const [importTab, setImportTab] = useState("manual");
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [importTab, setImportTab] = useState<ImportMode>("manual");
 
   const showHeroUploader =
     mode !== "create" || importTab !== "photo" || Boolean(imagePreview);
@@ -214,6 +214,28 @@ export function RecipeForm({
     });
   }
 
+  async function handleTextImport() {
+    if (importText.trim().length < 20) return;
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/import-recipe-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: importText.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import fehlgeschlagen");
+      applyExtraction(data);
+      toast.success("Rezept erkannt!", {
+        description: "Bitte prüfe und bearbeite die extrahierten Daten.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Text-Import fehlgeschlagen");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   async function handleUrlImport() {
     if (!importUrl.trim()) return;
     setAnalyzing(true);
@@ -230,7 +252,7 @@ export function RecipeForm({
         description: "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "URL-Import fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Link-Import fehlgeschlagen");
     } finally {
       setAnalyzing(false);
     }
@@ -335,142 +357,19 @@ export function RecipeForm({
       className="recipe-form mx-auto max-w-3xl space-y-5 pb-4 md:space-y-8"
     >
       {mode === "create" && (
-        <section className="form-import-card overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
-          <Tabs value={importTab} onValueChange={setImportTab} defaultValue="manual">
-            <div className="border-b border-border/40 p-3 md:p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary/80">
-                Rezept hinzufügen
-              </p>
-              <TabsList className="grid h-11 w-full grid-cols-3 rounded-xl bg-secondary/50 p-1">
-                <TabsTrigger value="manual" className="h-full rounded-lg text-xs sm:text-sm">
-                  Manuell
-                </TabsTrigger>
-                <TabsTrigger value="photo" className="h-full rounded-lg text-xs sm:text-sm">
-                  Foto
-                </TabsTrigger>
-                <TabsTrigger value="url" className="h-full rounded-lg text-xs sm:text-sm">
-                  URL
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="manual" className="px-4 py-5 md:px-6">
-              <p className="text-center text-sm leading-relaxed text-muted-foreground">
-                Trage Titel, Zutaten und Schritte unten selbst ein — oder wechsle zu{" "}
-                <span className="font-medium text-foreground">Foto</span> bzw.{" "}
-                <span className="font-medium text-foreground">URL</span>, um die KI nutzen.
-              </p>
-            </TabsContent>
-
-            <TabsContent value="photo" className="px-4 py-5 md:px-6">
-              {imagePreview && importTab === "photo" ? (
-                <div className="space-y-4">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imagePreview}
-                      alt="Rezeptfoto"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <p className="text-center text-sm text-muted-foreground">
-                    KI-Daten wurden übernommen. Prüfe das Formular unten.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={analyzing}
-                    onClick={() => photoInputRef.current?.click()}
-                  >
-                    Anderes Foto wählen
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center px-2 py-4 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                    <Camera className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="text-base font-semibold">Rezept fotografieren</h3>
-                  <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                    Lade ein Foto hoch — die KI erkennt Titel, Zutaten und Zubereitung.
-                  </p>
-                  <Button
-                    type="button"
-                    className="mt-5 w-full max-w-xs"
-                    disabled={analyzing}
-                    onClick={() => photoInputRef.current?.click()}
-                  >
-                    {analyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wird analysiert…
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Foto auswählen
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                disabled={analyzing}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handlePhotoAnalysis(file);
-                  e.target.value = "";
-                }}
-              />
-            </TabsContent>
-
-            <TabsContent value="url" className="px-4 py-5 md:px-6">
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                  <Link2 className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="text-base font-semibold">Von Webseite importieren</h3>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                  Link zu einem Online-Rezept einfügen — die KI übernimmt den Rest.
-                </p>
-              </div>
-              <div className="mt-5 space-y-3">
-                <Input
-                  type="url"
-                  placeholder="https://www.chefkoch.de/rezept/…"
-                  value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
-                  disabled={analyzing}
-                  className="h-11"
-                />
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={handleUrlImport}
-                  disabled={analyzing || !importUrl.trim()}
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Import läuft…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Rezept importieren
-                    </>
-                  )}
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </section>
+        <RecipeImportPanel
+          mode={importTab}
+          onModeChange={setImportTab}
+          analyzing={analyzing}
+          importText={importText}
+          onImportTextChange={setImportText}
+          onTextImport={handleTextImport}
+          importUrl={importUrl}
+          onImportUrlChange={setImportUrl}
+          onUrlImport={handleUrlImport}
+          imagePreview={imagePreview}
+          onPhotoSelect={handlePhotoAnalysis}
+        />
       )}
 
       {showHeroUploader && (

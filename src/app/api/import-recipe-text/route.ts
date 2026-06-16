@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAndParseRecipeUrl } from "@/lib/gemini/import-from-url";
+import { parseRecipeText } from "@/lib/gemini/import-from-text";
 import { getGeminiErrorMessage } from "@/lib/gemini/client";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,16 +15,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { url } = body as { url: string };
+    const { text } = body as { text: string };
 
-    if (!url?.trim()) {
-      return NextResponse.json({ error: "Link fehlt" }, { status: 400 });
+    if (!text?.trim()) {
+      return NextResponse.json({ error: "Text fehlt" }, { status: 400 });
     }
 
-    const extraction = await fetchAndParseRecipeUrl(url.trim());
+    const extraction = await parseRecipeText(text.trim());
     return NextResponse.json(extraction);
   } catch (error) {
-    console.error("URL import error:", error);
+    console.error("Text import error:", error);
     return NextResponse.json(
       { error: getGeminiErrorMessage(error) },
       { status: 500 }
