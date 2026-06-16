@@ -77,14 +77,14 @@ export function RecipesHomeView({
       ]
     : [];
 
-  const quickLinksSlot =
+  const quickLinksGrid =
     quickLinks.length > 0 ? (
-      <div className="grid grid-cols-4 gap-2 px-4 py-4 md:px-6">
+      <div className="mt-3 grid grid-cols-4 gap-2">
         {quickLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-center transition-colors hover:bg-secondary/60 active:bg-secondary"
+            className="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-center transition-colors hover:bg-secondary/60 active:bg-secondary"
           >
             <link.icon className="h-4 w-4 text-primary/80" />
             <span className="text-base font-bold leading-none">{link.value}</span>
@@ -98,7 +98,7 @@ export function RecipesHomeView({
 
   return (
     <div className="space-y-4">
-      <header className="page-header">
+      <header className="page-header !mb-0">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="page-title">Meine Rezepte</h1>
@@ -118,6 +118,7 @@ export function RecipesHomeView({
             )}
           </span>
         </div>
+        {quickLinksGrid}
       </header>
 
       <RecipeSearchFilters
@@ -129,7 +130,6 @@ export function RecipesHomeView({
         customCategories={customCategories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}
-        topSlot={quickLinksSlot}
       />
 
       {/* Rezept-Grid */}
