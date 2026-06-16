@@ -134,9 +134,9 @@ export function RecipesHomeView({
 
       {/* Rezept-Grid */}
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
+            <Skeleton key={i} className="h-24 rounded-xl sm:h-28" />
           ))}
         </div>
       ) : results.length === 0 ? (
@@ -151,9 +151,9 @@ export function RecipesHomeView({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {results.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <RecipeCard key={recipe.id} recipe={recipe} variant="compact" />
           ))}
         </div>
       )}
