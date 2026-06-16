@@ -6,21 +6,19 @@ import { PublicRecipeCard } from "@/components/recipes/public-recipe-card";
 import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters";
 import { ScrollToTopButton } from "@/components/layout/scroll-to-top-button";
 import { searchPublicRecipesAction } from "@/lib/actions/recipes";
-import type { CustomCategory, RecipeCategory } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 
 type PublicRecipeItem = Parameters<typeof PublicRecipeCard>[0]["recipe"];
 
 interface DiscoverHomeViewProps {
   initialRecipes: PublicRecipeItem[];
   categories: RecipeCategory[];
-  customCategories?: CustomCategory[];
   totalCount: number;
 }
 
 export function DiscoverHomeView({
   initialRecipes,
   categories,
-  customCategories = [],
   totalCount,
 }: DiscoverHomeViewProps) {
   const [query, setQuery] = useState("");
@@ -56,10 +54,10 @@ export function DiscoverHomeView({
   }
 
   return (
-    <div className="space-y-4">
-      <header className="page-header">
+    <div className="page-content">
+      <header className="page-header !mb-0">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <h1 className="page-title">Entdecken</h1>
             <p className="page-subtitle">
               Öffentliche Rezepte von anderen Nutzern
@@ -82,16 +80,15 @@ export function DiscoverHomeView({
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
         categories={categories}
-        customCategories={customCategories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}
         searchPlaceholder="Rezepte, Zutaten oder Tags suchen…"
       />
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
+            <Skeleton key={i} className="h-24 rounded-xl sm:h-28" />
           ))}
         </div>
       ) : results.length === 0 ? (
@@ -110,9 +107,9 @@ export function DiscoverHomeView({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {results.map((recipe) => (
-            <PublicRecipeCard key={recipe.id} recipe={recipe} />
+            <PublicRecipeCard key={recipe.id} recipe={recipe} variant="compact" />
           ))}
         </div>
       )}

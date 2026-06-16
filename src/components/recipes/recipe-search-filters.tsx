@@ -6,7 +6,7 @@ import {
   RecipeFilterChip,
   buildCategoryFilters,
 } from "@/components/recipes/recipe-filter-chips";
-import type { CustomCategory, RecipeCategory } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 import { cn } from "@/lib/utils";
 
 interface RecipeSearchFiltersProps {
@@ -15,7 +15,6 @@ interface RecipeSearchFiltersProps {
   categoryFilter: string;
   onCategoryFilterChange: (filter: string) => void;
   categories: RecipeCategory[];
-  customCategories?: CustomCategory[];
   hasActiveFilter: boolean;
   onClearFilters: () => void;
   searchPlaceholder?: string;
@@ -30,7 +29,6 @@ export function RecipeSearchFilters({
   categoryFilter,
   onCategoryFilterChange,
   categories,
-  customCategories = [],
   hasActiveFilter,
   onClearFilters,
   searchPlaceholder = "Rezepte, Zutaten oder Tags suchen…",
@@ -38,7 +36,7 @@ export function RecipeSearchFilters({
   sticky = true,
   topSlot,
 }: RecipeSearchFiltersProps) {
-  const allCategories = buildCategoryFilters(categories, customCategories);
+  const allCategories = buildCategoryFilters(categories);
 
   return (
     <section

@@ -5,17 +5,15 @@ import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters"
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { searchRecipesAction } from "@/lib/actions/recipes";
-import type { CustomCategory, RecipeCategory } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 
 interface RecipeSearchProps {
   categories: RecipeCategory[];
-  customCategories?: CustomCategory[];
   initialRecipes?: Parameters<typeof RecipeCard>[0]["recipe"][];
 }
 
 export function RecipeSearch({
   categories,
-  customCategories = [],
   initialRecipes = [],
 }: RecipeSearchProps) {
   const [query, setQuery] = useState("");
@@ -58,7 +56,6 @@ export function RecipeSearch({
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
         categories={categories}
-        customCategories={customCategories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}
       />

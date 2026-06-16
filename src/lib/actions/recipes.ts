@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { generateSlug } from "@/lib/recipe-utils";
+import { assertRecipeCanBePublished } from "@/lib/recipe-publish-guard";
 import { MAX_RECIPE_TAGS } from "@/lib/constants";
 import type { RecipeFormValues } from "@/lib/validations/auth";
 import { revalidatePath } from "next/cache";
@@ -107,6 +108,13 @@ export async function updateRecipe(
 
   const recipeData = normalizeRecipeFormData(data);
 
+  if (recipeData.is_public) {
+    await assertRecipeCanBePublished(id, user.id, {
+      data: recipeData,
+      imageUrl,
+    });
+  }
+
   const updateData: Record<string, unknown> = {
     title: recipeData.title,
     description: recipeData.description || "",
@@ -200,6 +208,8 @@ export async function publishRecipe(id: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
+
+  await assertRecipeCanBePublished(id, user.id);
 
   const { data: recipe, error } = await supabase
     .from("recipes")

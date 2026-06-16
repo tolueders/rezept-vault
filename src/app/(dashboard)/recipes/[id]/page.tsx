@@ -6,6 +6,7 @@ import {
   getRecipeVariants,
   getUserRecipeCopyId,
 } from "@/lib/queries/recipes";
+import { getPublicCopyPublishBlockReason } from "@/lib/recipe-publish-guard";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({
@@ -29,12 +30,14 @@ export default async function RecipeDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [recipe, comments, variants, userCopyId] = await Promise.all([
-    getRecipeById(id),
-    getRecipeComments(id),
-    user ? getRecipeVariants(id) : Promise.resolve([]),
-    user ? getUserRecipeCopyId(user.id, id) : Promise.resolve(null),
-  ]);
+  const [recipe, comments, variants, userCopyId, publicPublishBlockedReason] =
+    await Promise.all([
+      getRecipeById(id),
+      getRecipeComments(id),
+      user ? getRecipeVariants(id) : Promise.resolve([]),
+      user ? getUserRecipeCopyId(user.id, id) : Promise.resolve(null),
+      user ? getPublicCopyPublishBlockReason(id) : Promise.resolve(null),
+    ]);
 
   if (!recipe) notFound();
 
@@ -46,6 +49,7 @@ export default async function RecipeDetailPage({
       isOwner={user?.id === recipe.user_id}
       userCopyId={userCopyId}
       variants={variants}
+      publicPublishBlockedReason={publicPublishBlockedReason}
     />
   );
 }

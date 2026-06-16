@@ -302,11 +302,11 @@ CREATE TRIGGER recipe_ratings_stats
 -- Seed predefined categories
 INSERT INTO recipe_categories (name, slug, icon, sort_order) VALUES
   ('Frühstück', 'fruehstueck', 'sunrise', 1),
-  ('Mittagessen', 'mittagessen', 'utensils', 2),
-  ('Abendessen', 'abendessen', 'moon', 3),
-  ('Dessert', 'dessert', 'cake', 4),
-  ('Backen', 'backen', 'croissant', 5),
-  ('Snacks', 'snacks', 'cookie', 6),
+  ('Hauptgericht', 'hauptgericht', 'utensils', 2),
+  ('Dessert', 'dessert', 'cake', 3),
+  ('Snack', 'snack', 'cookie', 4),
+  ('Suppe', 'suppe', 'soup', 5),
+  ('Backen', 'backen', 'croissant', 6),
   ('Getränke', 'getraenke', 'coffee', 7);
 -- RezeptVault – Row Level Security Policies
 

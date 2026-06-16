@@ -1,12 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { CustomCategory, RecipeCategory } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 
-export function buildCategoryFilters(
-  categories: RecipeCategory[],
-  customCategories: CustomCategory[] = []
-) {
+export function buildCategoryFilters(categories: RecipeCategory[]) {
   return [
     { id: "all", label: "Alle", filter: "all", custom: false },
     ...categories.map((c) => ({
@@ -14,12 +11,6 @@ export function buildCategoryFilters(
       label: c.name,
       filter: `std:${c.id}`,
       custom: false,
-    })),
-    ...customCategories.map((c) => ({
-      id: c.id,
-      label: c.name,
-      filter: `custom:${c.id}`,
-      custom: true,
     })),
   ];
 }

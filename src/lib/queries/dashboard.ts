@@ -23,7 +23,6 @@ export async function getDashboardStats() {
     supabase
       .from("recipes")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
       .eq("is_public", true),
     supabase
       .from("meal_plans")

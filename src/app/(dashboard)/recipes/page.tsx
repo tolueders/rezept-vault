@@ -5,7 +5,6 @@ import { RecipesHomeView } from "@/components/recipes/recipes-home-view";
 import { RecipeSearch } from "@/components/recipes/recipe-search";
 import { getUserRecipes, getCategories } from "@/lib/queries/recipes";
 import { getDashboardStats } from "@/lib/queries/dashboard";
-import { getCustomCategories } from "@/lib/queries/categories";
 import { RECIPES_PER_PAGE } from "@/lib/constants";
 
 export const metadata = { title: "Meine Rezepte" };
@@ -17,13 +16,11 @@ export default async function RecipesPage({
 }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
-  const [{ recipes, total }, categories, customCategories, stats] =
-    await Promise.all([
-      getUserRecipes(page),
-      getCategories(),
-      getCustomCategories(),
-      getDashboardStats(),
-    ]);
+  const [{ recipes, total }, categories, stats] = await Promise.all([
+    getUserRecipes(page),
+    getCategories(),
+    getDashboardStats(),
+  ]);
 
   const totalPages = Math.ceil(total / RECIPES_PER_PAGE);
 
@@ -32,7 +29,6 @@ export default async function RecipesPage({
       <RecipesHomeView
         initialRecipes={recipes}
         categories={categories}
-        customCategories={customCategories}
         stats={stats ?? undefined}
       />
     );
@@ -55,11 +51,7 @@ export default async function RecipesPage({
         </Button>
       </header>
 
-      <RecipeSearch
-        categories={categories}
-        customCategories={customCategories}
-        initialRecipes={recipes}
-      />
+      <RecipeSearch categories={categories} initialRecipes={recipes} />
 
       {totalPages > 1 && (
         <div className="mt-8 flex justify-center gap-2">

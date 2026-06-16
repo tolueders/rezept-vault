@@ -46,6 +46,7 @@ interface RecipeDetailProps {
   isPublicView?: boolean;
   userCopyId?: string | null;
   variants?: Parameters<typeof RecipeVariants>[0]["variants"];
+  publicPublishBlockedReason?: string | null;
 }
 
 export function RecipeDetail({
@@ -56,6 +57,7 @@ export function RecipeDetail({
   isPublicView = false,
   userCopyId = null,
   variants = [],
+  publicPublishBlockedReason = null,
 }: RecipeDetailProps) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(recipe.is_favorited || false);
@@ -389,23 +391,36 @@ export function RecipeDetail({
       <div className="mt-8 space-y-4 mb-2">
         {!isPublicView && isOwner && !isPublic && (
           <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
-            <p className="text-sm text-muted-foreground">
-              Teilen ist erst möglich, wenn das Rezept öffentlich ist.
-            </p>
-            <Button
-              className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
-              onClick={handlePublish}
-              disabled={publishing}
-            >
-              {publishing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Wird veröffentlicht…
-                </>
-              ) : (
-                "Veröffentlichen"
-              )}
-            </Button>
+            {publicPublishBlockedReason ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {publicPublishBlockedReason}
+                </p>
+                <Button className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]" asChild>
+                  <Link href={`/recipes/${recipe.id}/edit`}>Rezept bearbeiten</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Teilen ist erst möglich, wenn das Rezept öffentlich ist.
+                </p>
+                <Button
+                  className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
+                  onClick={handlePublish}
+                  disabled={publishing}
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Wird veröffentlicht…
+                    </>
+                  ) : (
+                    "Veröffentlichen"
+                  )}
+                </Button>
+              </>
+            )}
           </div>
         )}
 

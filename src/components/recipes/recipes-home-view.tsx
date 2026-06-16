@@ -12,7 +12,7 @@ import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters"
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { searchRecipesAction } from "@/lib/actions/recipes";
-import type { CustomCategory, RecipeCategory } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 import { ScrollToTopButton } from "@/components/layout/scroll-to-top-button";
 
 type RecipeItem = Parameters<typeof RecipeCard>[0]["recipe"];
@@ -20,7 +20,6 @@ type RecipeItem = Parameters<typeof RecipeCard>[0]["recipe"];
 interface RecipesHomeViewProps {
   initialRecipes: RecipeItem[];
   categories: RecipeCategory[];
-  customCategories?: CustomCategory[];
   stats?: {
     displayName: string;
     recipeCount: number;
@@ -33,7 +32,6 @@ interface RecipesHomeViewProps {
 export function RecipesHomeView({
   initialRecipes,
   categories,
-  customCategories = [],
   stats,
 }: RecipesHomeViewProps) {
   const [query, setQuery] = useState("");
@@ -127,7 +125,6 @@ export function RecipesHomeView({
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
         categories={categories}
-        customCategories={customCategories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}
       />

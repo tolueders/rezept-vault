@@ -37,6 +37,12 @@ import {
   scanRecipeUrl,
 } from "@/lib/resolve-scan.client";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
+import {
+  formValuesToSnapshot,
+  recipeWithDetailsToSnapshot,
+  snapshotsEqual,
+  UNCHANGED_COPY_PUBLISH_MESSAGE,
+} from "@/lib/recipe-copy-utils";
 import { DIFFICULTY_LABELS, MAX_RECIPE_TAGS } from "@/lib/constants";
 import type {
   CustomCategory,
@@ -151,6 +157,13 @@ export function RecipeForm({
 
   const categoryId = form.watch("category_id");
   const customCategoryId = form.watch("custom_category_id");
+  const watchedForm = form.watch();
+  const publishBlocked =
+    !!recipe?.parent_recipe_id &&
+    snapshotsEqual(
+      formValuesToSnapshot(watchedForm, imagePreview),
+      recipeWithDetailsToSnapshot(recipe)
+    );
   const categoryValue = customCategoryId
     ? `custom:${customCategoryId}`
     : categoryId || categories[0]?.id
@@ -392,7 +405,12 @@ export function RecipeForm({
           <Label>Sichtbarkeit</Label>
           <RecipeVisibilityToggle
             value={form.watch("is_public")}
-            onChange={(isPublic) => form.setValue("is_public", isPublic)}
+            onChange={(isPublic) => {
+              if (isPublic && publishBlocked) return;
+              form.setValue("is_public", isPublic);
+            }}
+            publicDisabled={publishBlocked}
+            publicDisabledHint={UNCHANGED_COPY_PUBLISH_MESSAGE}
           />
         </div>
 
