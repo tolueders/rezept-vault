@@ -189,6 +189,31 @@ export async function deleteRecipe(id: string) {
   revalidatePath("/meal-plan");
 }
 
+export async function publishRecipe(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Nicht autorisiert");
+
+  const { data: recipe, error } = await supabase
+    .from("recipes")
+    .update({ is_public: true })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("slug")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/recipes");
+  revalidatePath("/discover");
+  revalidatePath(`/recipes/${id}`);
+  if (recipe?.slug) revalidatePath(`/recipe/${recipe.slug}`);
+
+  return { success: true };
+}
+
 export async function toggleFavorite(recipeId: string) {
   const supabase = await createClient();
   const {

@@ -29,6 +29,7 @@ import {
   rateRecipe,
   deleteRecipe,
   copyRecipeToCollection,
+  publishRecipe,
 } from "@/lib/actions/recipes";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
 import { shareOrCopy } from "@/lib/share-utils";
@@ -61,6 +62,8 @@ export function RecipeDetail({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [copying, setCopying] = useState(false);
   const [publicLinkCopied, setPublicLinkCopied] = useState(false);
+  const [isPublic, setIsPublic] = useState(recipe.is_public);
+  const [publishing, setPublishing] = useState(false);
 
   const cookHref = isPublicView
     ? `/recipe/${recipe.slug}/cook`
@@ -128,6 +131,20 @@ export function RecipeDetail({
       window.setTimeout(() => setPublicLinkCopied(false), 2500);
     } catch {
       toast.error("Link konnte nicht kopiert werden");
+    }
+  }
+
+  async function handlePublish() {
+    setPublishing(true);
+    try {
+      await publishRecipe(recipe.id);
+      setIsPublic(true);
+      toast.success("Rezept veröffentlicht");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fehler beim Veröffentlichen");
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -365,7 +382,29 @@ export function RecipeDetail({
         currentUserId={currentUserId}
       />
 
-      {recipe.is_public && isOwner && (
+      {!isPublicView && isOwner && !isPublic && (
+        <div className="mt-8 mb-2 rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
+          <p className="text-sm text-muted-foreground">
+            Teilen ist erst möglich, wenn das Rezept öffentlich ist.
+          </p>
+          <Button
+            className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
+            onClick={handlePublish}
+            disabled={publishing}
+          >
+            {publishing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Wird veröffentlicht…
+              </>
+            ) : (
+              "Veröffentlichen"
+            )}
+          </Button>
+        </div>
+      )}
+
+      {isPublic && isOwner && !isPublicView && (
         <div className="mt-8 mb-2 rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
           <p className="text-sm text-muted-foreground">
             Dieses Rezept ist öffentlich und kann geteilt werden.
