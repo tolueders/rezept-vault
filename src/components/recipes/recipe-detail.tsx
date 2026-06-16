@@ -19,16 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { StarRating } from "@/components/recipes/star-rating";
 import { PortionCalculator } from "@/components/recipes/portion-calculator";
 import { CommentsSection } from "@/components/recipes/comments-section";
@@ -71,7 +62,6 @@ export function RecipeDetail({
   const [userRating, setUserRating] = useState(recipe.user_rating || 0);
   const [cookMode, setCookMode] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
 
   const canCopyToCollection =
@@ -99,17 +89,13 @@ export function RecipeDetail({
   }
 
   async function confirmDelete() {
-    setDeleting(true);
     try {
       await deleteRecipe(recipe.id);
       toast.success("Rezept gelöscht");
-      setDeleteOpen(false);
       router.push("/recipes");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim Löschen");
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -428,31 +414,18 @@ export function RecipeDetail({
         )}
       </div>
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Rezept löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              „{recipe.title}“ wird unwiderruflich gelöscht. Das kann nicht rückgängig
-              gemacht werden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deleting}
-              onClick={(e) => {
-                e.preventDefault();
-                confirmDelete();
-              }}
-            >
-              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Endgültig löschen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Rezept löschen?"
+        description={
+          <>
+            „{recipe.title}“ wird unwiderruflich gelöscht. Das kann nicht rückgängig
+            gemacht werden.
+          </>
+        }
+        onConfirm={confirmDelete}
+      />
     </article>
   );
 }

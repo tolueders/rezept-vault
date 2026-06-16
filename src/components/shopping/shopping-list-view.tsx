@@ -1,234 +1,615 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Share2, Trash2, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  X,
+  CalendarDays,
+  Loader2,
+  ShoppingCart,
+  CheckCircle2,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   toggleShoppingItem,
-  deleteShoppingList,
+  toggleShoppingItems,
   addShoppingListItem,
   removeShoppingListItem,
-  createEmptyShoppingList,
+  importPlanIngredientsForDates,
+  finishShoppingTrip,
+  clearShoppingList,
 } from "@/lib/actions/meal-plan";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatAmount } from "@/lib/recipe-utils";
-import { formatShoppingListText, shareOrCopy } from "@/lib/share-utils";
+import {
+  countPlannedRecipesOnDates,
+  getSelectableDays,
+  isMergedItemChecked,
+  mergeItemsForShop,
+  type SelectableDay,
+} from "@/lib/shopping-utils";
 import type { ShoppingList, ShoppingListItem } from "@/types/database";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-interface ShoppingListViewProps {
-  lists: (ShoppingList & { items: ShoppingListItem[] })[];
-  activeListId?: string;
+interface PlanEntry {
+  meal_plan_id: string;
+  day_of_week: number;
 }
 
-export function ShoppingListView({ lists, activeListId }: ShoppingListViewProps) {
-  const router = useRouter();
-  const [newItemName, setNewItemName] = useState("");
-  const [adding, setAdding] = useState(false);
+interface ShoppingListViewProps {
+  planList: (ShoppingList & { items: ShoppingListItem[] }) | null;
+  extrasList: (ShoppingList & { items: ShoppingListItem[] }) | null;
+  planEntries: PlanEntry[];
+  planWeekStarts: Record<string, string>;
+  shopMode?: boolean;
+}
 
-  const activeList = activeListId
-    ? lists.find((l) => l.id === activeListId) || lists[0]
-    : lists[0];
+function ItemRow({
+  item,
+  onToggle,
+  onRemove,
+}: {
+  item: ShoppingListItem;
+  onToggle: (id: string, checked: boolean) => void;
+  onRemove: (id: string, name: string) => void;
+}) {
+  return (
+    <div className="flex min-h-12 items-center gap-2 rounded-lg px-2 py-2 sm:px-3 sm:py-3">
+      <Checkbox
+        checked={item.checked}
+        onCheckedChange={(checked) => onToggle(item.id, checked === true)}
+        className="h-5 w-5"
+      />
+      <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-3 py-1">
+        <span
+          className={cn(
+            "flex-1 text-base",
+            item.checked && "text-muted-foreground line-through"
+          )}
+        >
+          {item.name}
+        </span>
+        <span className="shrink-0 text-sm text-muted-foreground">
+          {formatAmount(item.amount, item.unit)}
+        </span>
+      </label>
+      <button
+        onClick={() => onRemove(item.id, item.name)}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+        aria-label="Entfernen"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function DayChip({
+  day,
+  selected,
+  recipeCount,
+  onClick,
+}: {
+  day: SelectableDay;
+  selected: boolean;
+  recipeCount: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-w-[4.5rem] flex-col items-center rounded-xl border px-3 py-2.5 text-center transition-colors",
+        selected
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-border bg-background hover:bg-muted/50",
+        day.isToday && !selected && "border-primary/40"
+      )}
+    >
+      <span className="text-xs font-medium uppercase tracking-wide opacity-80">
+        {day.weekday}
+      </span>
+      <span className="text-lg font-semibold leading-tight">{day.label}</span>
+      {day.isToday && (
+        <span className="mt-0.5 text-[10px] font-medium uppercase">Heute</span>
+      )}
+      {recipeCount > 0 && (
+        <span className="mt-1 text-[10px] text-muted-foreground">
+          {recipeCount} {recipeCount === 1 ? "Rezept" : "Rezepte"}
+        </span>
+      )}
+    </button>
+  );
+}
+
+export function ShoppingListView({
+  planList,
+  extrasList,
+  planEntries,
+  planWeekStarts,
+  shopMode = false,
+}: ShoppingListViewProps) {
+  const router = useRouter();
+  const selectableDays = useMemo(() => getSelectableDays(), []);
+
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    selectableDays.slice(0, 3).forEach((d) => initial.add(d.date));
+    return initial;
+  });
+
+  const [newExtraName, setNewExtraName] = useState("");
+  const [addingExtra, setAddingExtra] = useState(false);
+  const [importingPlan, setImportingPlan] = useState(false);
+  const [finishingShop, setFinishingShop] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<
+    | { kind: "clear-plan" }
+    | { kind: "clear-extras" }
+    | { kind: "item"; id: string; name: string }
+    | { kind: "finish-shop"; checkedCount: number; uncheckedCount: number }
+    | null
+  >(null);
+
+  const planWeekMap = useMemo(
+    () => new Map(Object.entries(planWeekStarts)),
+    [planWeekStarts]
+  );
+
+  const recipeCountForDates = (dates: Set<string>) =>
+    countPlannedRecipesOnDates(planEntries, planWeekMap, dates);
+
+  const selectedRecipeCount = recipeCountForDates(selectedDates);
+
+  const allItems = useMemo(
+    () => [...(planList?.items ?? []), ...(extrasList?.items ?? [])],
+    [planList?.items, extrasList?.items]
+  );
+
+  const mergedShopItems = useMemo(
+    () => mergeItemsForShop(allItems),
+    [allItems]
+  );
+
+  const checkedShopCount = mergedShopItems.filter(isMergedItemChecked).length;
+  const totalShopCount = mergedShopItems.length;
+
+  function toggleDate(date: string) {
+    setSelectedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) {
+        if (next.size > 1) next.delete(date);
+      } else {
+        next.add(date);
+      }
+      return next;
+    });
+  }
 
   async function handleToggle(itemId: string, checked: boolean) {
     await toggleShoppingItem(itemId, checked);
     router.refresh();
   }
 
-  async function handleDeleteList(listId: string) {
-    if (!confirm("Einkaufsliste löschen?")) return;
-    await deleteShoppingList(listId);
-    toast.success("Liste gelöscht");
-    router.push("/shopping-list");
+  async function handleToggleMerged(sourceIds: string[], checked: boolean) {
+    await toggleShoppingItems(sourceIds, checked);
     router.refresh();
   }
 
-  async function handleRemoveItem(itemId: string) {
-    await removeShoppingListItem(itemId);
-    router.refresh();
-  }
-
-  async function handleAddItem() {
-    if (!activeList || !newItemName.trim()) return;
-    setAdding(true);
+  async function handleAddExtra() {
+    if (!extrasList || !newExtraName.trim()) return;
+    setAddingExtra(true);
     try {
-      await addShoppingListItem(activeList.id, newItemName.trim());
-      setNewItemName("");
+      await addShoppingListItem(extrasList.id, newExtraName.trim());
+      setNewExtraName("");
       toast.success("Hinzugefügt");
       router.refresh();
     } catch {
       toast.error("Fehler beim Hinzufügen");
     } finally {
-      setAdding(false);
+      setAddingExtra(false);
     }
   }
 
-  async function handleCreateList() {
-    setAdding(true);
+  async function handleImportPlan() {
+    if (selectedDates.size === 0) return;
+    setImportingPlan(true);
     try {
-      const list = await createEmptyShoppingList();
-      toast.success("Neue Liste erstellt");
-      router.push(`/shopping-list?id=${list.id}`);
+      const result = await importPlanIngredientsForDates([...selectedDates]);
+      toast.success(
+        `${result.count} Zutaten aus ${result.recipes} ${result.recipes === 1 ? "Rezept" : "Rezepten"} übernommen`
+      );
       router.refresh();
-    } catch {
-      toast.error("Fehler beim Erstellen");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fehler beim Importieren");
     } finally {
-      setAdding(false);
+      setImportingPlan(false);
     }
   }
 
-  async function handleShareList() {
-    if (!activeList) return;
-    const text = formatShoppingListText(activeList.title, activeList.items);
-    try {
-      const result = await shareOrCopy({
-        title: activeList.title,
-        text,
-      });
-      toast.success(result === "shared" ? "Liste geteilt!" : "Liste kopiert!");
-    } catch {
-      // User cancelled
+  async function confirmAction() {
+    if (!confirmTarget) return;
+
+    if (confirmTarget.kind === "item") {
+      await removeShoppingListItem(confirmTarget.id);
+      toast.success("Entfernt");
+      router.refresh();
+    } else if (confirmTarget.kind === "clear-plan" && planList) {
+      await clearShoppingList(planList.id);
+      toast.success("Wochenplan-Zutaten geleert");
+      router.refresh();
+    } else if (confirmTarget.kind === "clear-extras" && extrasList) {
+      await clearShoppingList(extrasList.id);
+      toast.success("Weitere Zutaten geleert");
+      router.refresh();
+    } else if (confirmTarget.kind === "finish-shop") {
+      setFinishingShop(true);
+      try {
+        const checkedIds = mergedShopItems
+          .filter(isMergedItemChecked)
+          .flatMap((item) => item.sources.map((s) => s.itemId));
+
+        const { removed } = await finishShoppingTrip(checkedIds);
+        toast.success(
+          removed > 0
+            ? `${removed} ${removed === 1 ? "Zutat" : "Zutaten"} abgehakt und entfernt`
+            : "Einkauf beendet"
+        );
+        router.push("/shopping-list");
+        router.refresh();
+      } catch {
+        toast.error("Fehler beim Abschließen");
+      } finally {
+        setFinishingShop(false);
+      }
     }
   }
 
-  if (!activeList) {
+  if (shopMode) {
     return (
-      <div className="py-16 text-center">
-        <p className="text-muted-foreground">
-          Noch keine Einkaufsliste. Erstelle eine aus dem Wochenplan oder manuell.
-        </p>
-        <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-          <Button onClick={() => router.push("/meal-plan")}>
-            Zum Wochenplan
+      <div>
+        <header className="page-header">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2 mb-2"
+            onClick={() => router.push("/shopping-list")}
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Zurück
           </Button>
-          <Button variant="outline" onClick={handleCreateList} disabled={adding}>
-            <Plus className="mr-1 h-4 w-4" />
-            Leere Liste erstellen
-          </Button>
-        </div>
+          <h1 className="page-title">Jetzt einkaufen</h1>
+          <p className="page-subtitle">
+            {checkedShopCount} von {totalShopCount} im Wagen
+          </p>
+        </header>
+
+        {totalShopCount === 0 ? (
+          <Card className="border-border/50 shadow-sm">
+            <CardContent className="space-y-4 py-10 text-center">
+              <ShoppingCart className="mx-auto h-10 w-10 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                Noch keine Zutaten auf der Liste.
+              </p>
+              <Button variant="outline" onClick={() => router.push("/shopping-list")}>
+                Zutaten hinzufügen
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Card className="mb-6 border-border/50 shadow-sm">
+              <CardContent className="space-y-1 pt-5">
+                {mergedShopItems.map((item) => {
+                  const checked = isMergedItemChecked(item);
+                  const sourceIds = item.sources.map((s) => s.itemId);
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex min-h-14 items-center gap-2 rounded-lg px-2 py-2 sm:px-3"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          handleToggleMerged(sourceIds, value === true)
+                        }
+                        className="h-6 w-6"
+                      />
+                      <label className="flex min-h-12 flex-1 cursor-pointer items-center gap-3 py-1">
+                        <span
+                          className={cn(
+                            "flex-1 text-lg",
+                            checked && "text-muted-foreground line-through"
+                          )}
+                        >
+                          {item.name}
+                        </span>
+                        <span className="shrink-0 text-sm text-muted-foreground">
+                          {formatAmount(item.amount, item.unit)}
+                        </span>
+                      </label>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            <div className="sticky bottom-4 space-y-3">
+              <Button
+                className="h-12 w-full text-base"
+                size="lg"
+                disabled={finishingShop}
+                onClick={() =>
+                  setConfirmTarget({
+                    kind: "finish-shop",
+                    checkedCount: checkedShopCount,
+                    uncheckedCount: totalShopCount - checkedShopCount,
+                  })
+                }
+              >
+                {finishingShop ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                )}
+                Einkauf abschließen
+              </Button>
+              {totalShopCount - checkedShopCount > 0 && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Nicht abgehakte Zutaten bleiben auf deinen Listen.
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        <ConfirmDialog
+          open={!!confirmTarget}
+          onOpenChange={(open) => !open && setConfirmTarget(null)}
+          title="Einkauf abschließen?"
+          description={
+            confirmTarget?.kind === "finish-shop" ? (
+              confirmTarget.checkedCount > 0 ? (
+                <>
+                  {confirmTarget.checkedCount}{" "}
+                  {confirmTarget.checkedCount === 1
+                    ? "Zutat wird"
+                    : "Zutaten werden"}{" "}
+                  von der Liste entfernt.
+                  {confirmTarget.uncheckedCount > 0 && (
+                    <>
+                      {" "}
+                      {confirmTarget.uncheckedCount}{" "}
+                      {confirmTarget.uncheckedCount === 1
+                        ? "fehlende Zutat bleibt"
+                        : "fehlende Zutaten bleiben"}{" "}
+                      erhalten.
+                    </>
+                  )}
+                </>
+              ) : (
+                <>Es wurden noch keine Zutaten abgehakt.</>
+              )
+            ) : null
+          }
+          confirmLabel="Abschließen"
+          onConfirm={confirmAction}
+        />
       </div>
     );
   }
-
-  const checkedCount = activeList.items.filter((i) => i.checked).length;
 
   return (
     <div>
       <header className="page-header">
         <h1 className="page-title">Einkaufsliste</h1>
         <p className="page-subtitle">
-          {checkedCount} von {activeList.items.length} erledigt
+          Zutaten aus dem Wochenplan und eigene Ergänzungen
         </p>
       </header>
 
-      <div className="mb-6 flex gap-2.5 sm:mb-8">
-        <Button
-          variant="outline"
-          className="flex-1 sm:flex-none"
-          onClick={handleShareList}
-          disabled={activeList.items.length === 0}
-        >
-          <Share2 className="mr-1 h-4 w-4" />
-          Teilen
-        </Button>
-        <Button
-          variant="outline"
-          className="flex-1 sm:flex-none"
-          onClick={handleCreateList}
-          disabled={adding}
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          Neue Liste
-        </Button>
-        <Button
-          variant="outline"
-          className="flex-1 sm:flex-none"
-          onClick={() => handleDeleteList(activeList.id)}
-        >
-          <Trash2 className="mr-1 h-4 w-4" />
-          Löschen
-        </Button>
-      </div>
+      <Button
+        className="mb-6 h-12 w-full text-base sm:mb-8"
+        size="lg"
+        disabled={allItems.length === 0}
+        onClick={() => router.push("/shopping-list?mode=shop")}
+      >
+        <ShoppingCart className="mr-2 h-5 w-5" />
+        Jetzt einkaufen
+        {allItems.length > 0 && (
+          <span className="ml-2 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-sm">
+            {allItems.length}
+          </span>
+        )}
+      </Button>
 
-      {lists.length > 1 && (
-        <div className="mb-6 flex flex-wrap gap-2">
-          {lists.map((list) => (
+      <Card className="mb-6 border-border/50 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Aus Wochenplan übernehmen</CardTitle>
+              <p className="mt-0.5 text-sm font-normal text-muted-foreground">
+                Nur heute und kommende Tage (max. 1 Woche)
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {selectableDays.map((day) => (
+              <DayChip
+                key={day.date}
+                day={day}
+                selected={selectedDates.has(day.date)}
+                recipeCount={recipeCountForDates(new Set([day.date]))}
+                onClick={() => toggleDate(day.date)}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {selectedRecipeCount > 0
+                ? `${selectedRecipeCount} ${selectedRecipeCount === 1 ? "Rezept" : "Rezepte"} an ${selectedDates.size} ${selectedDates.size === 1 ? "Tag" : "Tagen"}`
+                : "Keine Rezepte an den gewählten Tagen geplant"}
+            </p>
             <Button
-              key={list.id}
-              variant={list.id === activeList.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => router.push(`/shopping-list?id=${list.id}`)}
+              variant="outline"
+              className="w-full shrink-0 sm:w-auto"
+              disabled={importingPlan || selectedRecipeCount === 0}
+              onClick={handleImportPlan}
             >
-              {list.title}
+              {importingPlan ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Zutaten übernehmen
             </Button>
-          ))}
-        </div>
-      )}
+          </div>
+
+          {planList && (
+            <div className="border-t border-border pt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium">{planList.title}</p>
+                {planList.items.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-muted-foreground"
+                    onClick={() => setConfirmTarget({ kind: "clear-plan" })}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    Leeren
+                  </Button>
+                )}
+              </div>
+              {planList.items.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Noch keine Zutaten — wähle Tage und übernimm sie aus dem Plan
+                </p>
+              ) : (
+                planList.items
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                  .map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      onToggle={handleToggle}
+                      onRemove={(id, name) =>
+                        setConfirmTarget({ kind: "item", id, name })
+                      }
+                    />
+                  ))
+              )}
+            </div>
+          )}
+
+          {!planList && (
+            <p className="text-sm text-muted-foreground">
+              <Link href="/meal-plan" className="text-primary underline-offset-4 hover:underline">
+                Wochenplanung
+              </Link>{" "}
+              öffnen und Rezepte planen.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="border-border/50 shadow-sm">
-        <CardHeader>
-          <CardTitle>{activeList.title}</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">
+              {extrasList?.title ?? "Weitere Zutaten"}
+            </CardTitle>
+            {extrasList && extrasList.items.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-muted-foreground"
+                onClick={() => setConfirmTarget({ kind: "clear-extras" })}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Leeren
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-1">
-          {activeList.items.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground">
-              Noch keine Einträge – füge unten etwas hinzu
+          {extrasList?.items.length === 0 && (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Milch, Haushaltswaren oder andere Dinge, die nicht im Plan stehen
             </p>
-          ) : (
-            activeList.items
-              .sort((a, b) => a.sort_order - b.sort_order)
-              .map((item) => (
-                <div
-                  key={item.id}
-                  className="flex min-h-12 items-center gap-2 rounded-lg px-2 py-2 sm:px-3 sm:py-3"
-                >
-                  <Checkbox
-                    checked={item.checked}
-                    onCheckedChange={(checked) =>
-                      handleToggle(item.id, checked === true)
-                    }
-                    className="h-5 w-5"
-                  />
-                  <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-3 py-1">
-                    <span
-                      className={`flex-1 text-base ${item.checked ? "text-muted-foreground line-through" : ""}`}
-                    >
-                      {item.name}
-                    </span>
-                    <span className="shrink-0 text-sm text-muted-foreground">
-                      {formatAmount(item.amount, item.unit)}
-                    </span>
-                  </label>
-                  <button
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground"
-                    aria-label="Entfernen"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))
           )}
+
+          {extrasList?.items
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                onToggle={handleToggle}
+                onRemove={(id, name) =>
+                  setConfirmTarget({ kind: "item", id, name })
+                }
+              />
+            ))}
 
           <div className="flex gap-2 border-t border-border pt-4">
             <Input
-              placeholder="Zutat hinzufügen…"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
+              placeholder="Weitere Zutat hinzufügen…"
+              value={newExtraName}
+              onChange={(e) => setNewExtraName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddExtra()}
+              disabled={!extrasList}
             />
             <Button
-              onClick={handleAddItem}
-              disabled={adding || !newItemName.trim()}
+              onClick={handleAddExtra}
+              disabled={addingExtra || !newExtraName.trim() || !extrasList}
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        onOpenChange={(open) => !open && setConfirmTarget(null)}
+        title={
+          confirmTarget?.kind === "clear-plan"
+            ? "Wochenplan-Zutaten leeren?"
+            : confirmTarget?.kind === "clear-extras"
+              ? "Weitere Zutaten leeren?"
+              : "Zutat entfernen?"
+        }
+        description={
+          confirmTarget?.kind === "clear-plan" ? (
+            <>Alle Zutaten aus dem Wochenplan werden von der Liste entfernt.</>
+          ) : confirmTarget?.kind === "clear-extras" ? (
+            <>Alle weiteren Zutaten werden von der Liste entfernt.</>
+          ) : confirmTarget?.kind === "item" ? (
+            <>
+              „{confirmTarget.name}“ wird von der Liste entfernt.
+            </>
+          ) : null
+        }
+        confirmLabel={
+          confirmTarget?.kind === "item" ? "Entfernen" : "Leeren"
+        }
+        onConfirm={confirmAction}
+      />
     </div>
   );
 }

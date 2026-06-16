@@ -11,6 +11,7 @@ import {
   deleteComment,
   updateComment,
 } from "@/lib/actions/recipes";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { RecipeComment } from "@/types/database";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -33,6 +34,7 @@ export function CommentsSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,10 +67,11 @@ export function CommentsSection({
     }
   }
 
-  async function handleDelete(commentId: string) {
+  async function confirmDeleteComment() {
+    if (!commentToDelete) return;
     try {
-      await deleteComment(commentId);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      await deleteComment(commentToDelete);
+      setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
       toast.success("Kommentar gelöscht");
     } catch {
       toast.error("Fehler beim Löschen");
@@ -151,7 +154,7 @@ export function CommentsSection({
                     <Pencil className="inline h-3 w-3" /> Bearbeiten
                   </button>
                   <button
-                    onClick={() => handleDelete(comment.id)}
+                    onClick={() => setCommentToDelete(comment.id)}
                     className="text-xs text-destructive hover:underline"
                   >
                     <Trash2 className="inline h-3 w-3" /> Löschen
@@ -162,6 +165,14 @@ export function CommentsSection({
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!commentToDelete}
+        onOpenChange={(open) => !open && setCommentToDelete(null)}
+        title="Kommentar löschen?"
+        description="Der Kommentar wird unwiderruflich gelöscht."
+        onConfirm={confirmDeleteComment}
+      />
     </div>
   );
 }

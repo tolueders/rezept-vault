@@ -10,6 +10,7 @@ import {
   createCustomCategory,
   deleteCustomCategory,
 } from "@/lib/actions/categories";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { CustomCategory } from "@/types/database";
 import { toast } from "sonner";
 
@@ -24,6 +25,7 @@ export function CustomCategoriesSection({
   const [categories, setCategories] = useState(initial);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<CustomCategory | null>(null);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -44,11 +46,11 @@ export function CustomCategoriesSection({
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Kategorie löschen? Rezepte behalten ihre Zuordnung nicht.")) return;
+  async function confirmDeleteCategory() {
+    if (!categoryToDelete) return;
     try {
-      await deleteCustomCategory(id);
-      setCategories((prev) => prev.filter((c) => c.id !== id));
+      await deleteCustomCategory(categoryToDelete.id);
+      setCategories((prev) => prev.filter((c) => c.id !== categoryToDelete.id));
       toast.success("Kategorie gelöscht");
       router.refresh();
     } catch {
@@ -75,7 +77,7 @@ export function CustomCategoriesSection({
               >
                 <span className="text-sm font-medium">{cat.name}</span>
                 <button
-                  onClick={() => handleDelete(cat.id)}
+                  onClick={() => setCategoryToDelete(cat)}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground"
                   aria-label="Löschen"
                 >
@@ -102,6 +104,19 @@ export function CustomCategoriesSection({
           </Button>
         </form>
       </CardContent>
+
+      <ConfirmDialog
+        open={!!categoryToDelete}
+        onOpenChange={(open) => !open && setCategoryToDelete(null)}
+        title="Kategorie löschen?"
+        description={
+          <>
+            „{categoryToDelete?.name}“ wird gelöscht. Rezepte behalten ihre Zuordnung
+            zu dieser Kategorie nicht.
+          </>
+        }
+        onConfirm={confirmDeleteCategory}
+      />
     </Card>
   );
 }

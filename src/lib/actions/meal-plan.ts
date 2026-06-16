@@ -2,8 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getWeekStart, mergeShoppingIngredients } from "@/lib/recipe-utils";
+import { entryDateFromPlan } from "@/lib/shopping-utils";
 import { revalidatePath } from "next/cache";
-import { format } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -210,6 +211,96 @@ export async function generateShoppingList(mealPlanId: string) {
   return { id: listId };
 }
 
+export async function appendMealPlanIngredientsToList(
+  listId: string,
+  weekStartStr?: string
+) {
+  const { supabase, user } = await requireUser();
+
+  const { data: list } = await supabase
+    .from("shopping_lists")
+    .select("id")
+    .eq("id", listId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!list) throw new Error("Liste nicht gefunden");
+
+  const start = weekStartStr ? new Date(weekStartStr) : getWeekStart();
+  const weekKey = format(getWeekStart(start), "yyyy-MM-dd");
+
+  const { data: plan } = await supabase
+    .from("meal_plans")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("week_start", weekKey)
+    .maybeSingle();
+
+  if (!plan) throw new Error("Kein Wochenplan für diese Woche");
+
+  const { data: entries } = await supabase
+    .from("meal_plan_entries")
+    .select("recipe_id")
+    .eq("meal_plan_id", plan.id);
+
+  if (!entries?.length) throw new Error("Keine Rezepte im Wochenplan");
+
+  const recipeIds = entries.map((e) => e.recipe_id);
+  const { data: planIngredients } = await supabase
+    .from("recipe_ingredients")
+    .select("name, amount, unit")
+    .in("recipe_id", recipeIds);
+
+  if (!planIngredients?.length) {
+    throw new Error("Geplante Rezepte haben keine Zutaten");
+  }
+
+  const { data: existingItems } = await supabase
+    .from("shopping_list_items")
+    .select("*")
+    .eq("shopping_list_id", listId)
+    .order("sort_order");
+
+  const itemKey = (name: string, unit: string) =>
+    `${name.toLowerCase().trim()}|${unit.toLowerCase().trim()}`;
+
+  const existingByKey = new Map(
+    (existingItems ?? []).map((item) => [itemKey(item.name, item.unit), item])
+  );
+
+  let nextOrder =
+    existingItems?.reduce((max, item) => Math.max(max, item.sort_order), -1) ?? -1;
+
+  for (const ing of planIngredients) {
+    const key = itemKey(ing.name, ing.unit);
+    const existing = existingByKey.get(key);
+    if (existing) {
+      await supabase
+        .from("shopping_list_items")
+        .update({ amount: existing.amount + ing.amount })
+        .eq("id", existing.id);
+      existingByKey.set(key, { ...existing, amount: existing.amount + ing.amount });
+    } else {
+      nextOrder += 1;
+      const { data: inserted } = await supabase
+        .from("shopping_list_items")
+        .insert({
+          shopping_list_id: listId,
+          name: ing.name.trim(),
+          amount: ing.amount,
+          unit: ing.unit,
+          sort_order: nextOrder,
+        })
+        .select()
+        .single();
+      if (inserted) existingByKey.set(key, inserted);
+    }
+  }
+
+  revalidatePath("/shopping-list");
+  return { added: planIngredients.length };
+}
+
 export async function createEmptyShoppingList(title = "Meine Einkaufsliste") {
   const { supabase, user } = await requireUser();
 
@@ -321,5 +412,216 @@ export async function deleteShoppingList(listId: string) {
     .delete()
     .eq("id", listId)
     .eq("user_id", user.id);
+  revalidatePath("/shopping-list");
+}
+
+async function getRecipeIdsForDates(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  dateStrings: string[]
+) {
+  const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
+  const validDates = [...new Set(dateStrings.filter((d) => d >= todayStr))];
+  if (validDates.length === 0) return [];
+
+  const weekStarts = [
+    ...new Set(
+      validDates.map((d) => format(getWeekStart(parseISO(d)), "yyyy-MM-dd"))
+    ),
+  ];
+
+  const { data: plans } = await supabase
+    .from("meal_plans")
+    .select("id, week_start")
+    .eq("user_id", userId)
+    .in("week_start", weekStarts);
+
+  if (!plans?.length) return [];
+
+  const validSet = new Set(validDates);
+  const recipeIds = new Set<string>();
+
+  for (const plan of plans) {
+    const { data: entries } = await supabase
+      .from("meal_plan_entries")
+      .select("recipe_id, day_of_week")
+      .eq("meal_plan_id", plan.id);
+
+    for (const entry of entries ?? []) {
+      const entryDate = format(
+        entryDateFromPlan(plan.week_start, entry.day_of_week),
+        "yyyy-MM-dd"
+      );
+      if (validSet.has(entryDate)) {
+        recipeIds.add(entry.recipe_id);
+      }
+    }
+  }
+
+  return [...recipeIds];
+}
+
+export async function ensureTypedShoppingLists() {
+  const { supabase, user } = await requireUser();
+
+  const titles = {
+    plan: "Zutaten – Wochenplan",
+    extras: "Weitere Zutaten",
+  } as const;
+
+  for (const listType of ["plan", "extras"] as const) {
+    const { data: existing } = await supabase
+      .from("shopping_lists")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("list_type", listType)
+      .maybeSingle();
+
+    if (!existing) {
+      await supabase.from("shopping_lists").insert({
+        user_id: user.id,
+        title: titles[listType],
+        list_type: listType,
+      });
+    }
+  }
+
+  revalidatePath("/shopping-list");
+}
+
+export async function importPlanIngredientsForDates(dateStrings: string[]) {
+  const { supabase, user } = await requireUser();
+
+  const recipeIds = await getRecipeIdsForDates(supabase, user.id, dateStrings);
+  if (recipeIds.length === 0) {
+    throw new Error("Keine Rezepte für die gewählten Tage geplant");
+  }
+
+  const { data: ingredients } = await supabase
+    .from("recipe_ingredients")
+    .select("name, amount, unit")
+    .in("recipe_id", recipeIds);
+
+  const merged = mergeShoppingIngredients(ingredients || []);
+
+  let { data: planList } = await supabase
+    .from("shopping_lists")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("list_type", "plan")
+    .maybeSingle();
+
+  if (!planList) {
+    const { data: created, error } = await supabase
+      .from("shopping_lists")
+      .insert({
+        user_id: user.id,
+        title: "Zutaten – Wochenplan",
+        list_type: "plan",
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    planList = created;
+  }
+
+  await supabase
+    .from("shopping_list_items")
+    .delete()
+    .eq("shopping_list_id", planList!.id);
+
+  if (merged.length > 0) {
+    await supabase.from("shopping_list_items").insert(
+      merged.map((item, i) => ({
+        shopping_list_id: planList!.id,
+        name: item.name,
+        amount: item.amount,
+        unit: item.unit,
+        sort_order: i,
+      }))
+    );
+  }
+
+  revalidatePath("/shopping-list");
+  return { count: merged.length, recipes: recipeIds.length };
+}
+
+export async function toggleShoppingItems(itemIds: string[], checked: boolean) {
+  const { supabase, user } = await requireUser();
+
+  for (const itemId of itemIds) {
+    const { data: item } = await supabase
+      .from("shopping_list_items")
+      .select("shopping_list_id")
+      .eq("id", itemId)
+      .maybeSingle();
+
+    if (!item) continue;
+
+    const { data: list } = await supabase
+      .from("shopping_lists")
+      .select("id")
+      .eq("id", item.shopping_list_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!list) continue;
+
+    await supabase
+      .from("shopping_list_items")
+      .update({ checked })
+      .eq("id", itemId);
+  }
+
+  revalidatePath("/shopping-list");
+}
+
+export async function finishShoppingTrip(checkedItemIds: string[]) {
+  const { supabase, user } = await requireUser();
+
+  let removed = 0;
+
+  for (const itemId of checkedItemIds) {
+    const { data: item } = await supabase
+      .from("shopping_list_items")
+      .select("shopping_list_id")
+      .eq("id", itemId)
+      .maybeSingle();
+
+    if (!item) continue;
+
+    const { data: list } = await supabase
+      .from("shopping_lists")
+      .select("id")
+      .eq("id", item.shopping_list_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!list) continue;
+
+    await supabase.from("shopping_list_items").delete().eq("id", itemId);
+    removed += 1;
+  }
+
+  revalidatePath("/shopping-list");
+  return { removed };
+}
+
+export async function clearShoppingList(listId: string) {
+  const { supabase, user } = await requireUser();
+
+  const { data: list } = await supabase
+    .from("shopping_lists")
+    .select("id")
+    .eq("id", listId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!list) throw new Error("Liste nicht gefunden");
+
+  await supabase
+    .from("shopping_list_items")
+    .delete()
+    .eq("shopping_list_id", listId);
   revalidatePath("/shopping-list");
 }

@@ -123,6 +123,7 @@ export interface ShoppingList {
   user_id: string;
   meal_plan_id: string | null;
   title: string;
+  list_type?: "general" | "plan" | "extras";
 }
 
 export interface ShoppingListItem {
