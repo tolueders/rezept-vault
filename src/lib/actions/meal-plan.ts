@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getWeekStart, mergeShoppingIngredients } from "@/lib/recipe-utils";
 import { entryDateFromPlan } from "@/lib/shopping-utils";
+import { ensureShoppingLists } from "@/lib/queries/shopping-lists";
 import { revalidatePath } from "next/cache";
 import { format, parseISO, startOfDay } from "date-fns";
 
@@ -463,29 +464,7 @@ async function getRecipeIdsForDates(
 
 export async function ensureTypedShoppingLists() {
   const { supabase, user } = await requireUser();
-
-  const titles = {
-    plan: "Zutaten – Wochenplan",
-    extras: "Weitere Zutaten",
-  } as const;
-
-  for (const listType of ["plan", "extras"] as const) {
-    const { data: existing } = await supabase
-      .from("shopping_lists")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("list_type", listType)
-      .maybeSingle();
-
-    if (!existing) {
-      await supabase.from("shopping_lists").insert({
-        user_id: user.id,
-        title: titles[listType],
-        list_type: listType,
-      });
-    }
-  }
-
+  await ensureShoppingLists(supabase, user.id);
   revalidatePath("/shopping-list");
 }
 
@@ -504,36 +483,17 @@ export async function importPlanIngredientsForDates(dateStrings: string[]) {
 
   const merged = mergeShoppingIngredients(ingredients || []);
 
-  let { data: planList } = await supabase
-    .from("shopping_lists")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("list_type", "plan")
-    .maybeSingle();
-
-  if (!planList) {
-    const { data: created, error } = await supabase
-      .from("shopping_lists")
-      .insert({
-        user_id: user.id,
-        title: "Zutaten – Wochenplan",
-        list_type: "plan",
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    planList = created;
-  }
+  const { planList } = await ensureShoppingLists(supabase, user.id);
 
   await supabase
     .from("shopping_list_items")
     .delete()
-    .eq("shopping_list_id", planList!.id);
+    .eq("shopping_list_id", planList.id);
 
   if (merged.length > 0) {
     await supabase.from("shopping_list_items").insert(
       merged.map((item, i) => ({
-        shopping_list_id: planList!.id,
+        shopping_list_id: planList.id,
         name: item.name,
         amount: item.amount,
         unit: item.unit,
