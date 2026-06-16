@@ -307,7 +307,7 @@ export function ShoppingListView({
         ) : (
           <>
             <Card className="border-border/50 shadow-sm md:mb-0">
-              <CardContent className="space-y-1 pt-5 pb-28 md:pb-5">
+              <CardContent className="space-y-1 pt-5 pb-36 md:pb-5">
                 {mergedShopItems.map((item) => {
                   const checked = isMergedItemChecked(item);
                   const sourceIds = item.sources.map((s) => s.itemId);
@@ -342,7 +342,7 @@ export function ShoppingListView({
               </CardContent>
             </Card>
 
-            <div className="shop-action-bar space-y-2 md:space-y-3">
+            <div className="shop-action-bar shop-action-bar--docked space-y-2 md:space-y-3">
               <Button
                 className="mx-auto h-12 w-full max-w-7xl text-base"
                 size="lg"

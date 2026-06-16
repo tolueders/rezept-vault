@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AppHeader } from "@/components/layout/app-header";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { MobileFab } from "@/components/layout/mobile-fab";
@@ -14,11 +15,13 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="app-main mx-auto max-w-7xl overflow-x-hidden px-4 pb-5 pt-4 sm:px-6 md:pb-8 md:pt-6">
+      <main className="app-main mx-auto max-w-7xl min-w-0 overflow-x-hidden px-4 pb-5 pt-4 sm:px-6 md:pb-8 md:pt-6">
         {children}
       </main>
-      <MobileFab />
-      <MobileBottomNav />
+      <Suspense fallback={null}>
+        <MobileFab />
+        <MobileBottomNav />
+      </Suspense>
       <Toaster position="top-center" richColors />
     </div>
   );

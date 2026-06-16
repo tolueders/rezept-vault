@@ -457,6 +457,14 @@ export async function searchRecipesAction(query: string, categoryId?: string) {
   return searchRecipes(query, categoryId);
 }
 
+export async function searchFavoriteRecipesAction(
+  query: string,
+  categoryId?: string
+) {
+  const { searchFavoriteRecipes } = await import("@/lib/queries/recipes");
+  return searchFavoriteRecipes(query, categoryId);
+}
+
 export async function searchPublicRecipesAction(
   query: string,
   categoryId?: string

@@ -121,7 +121,7 @@ export function CookMode({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col bg-background"
+      className="flex h-[100dvh] flex-col overflow-hidden bg-background"
       style={{
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",

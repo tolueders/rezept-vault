@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   Calendar,
@@ -10,6 +10,7 @@ import {
   User,
 } from "lucide-react";
 import { MOBILE_NAV_ITEMS } from "@/lib/constants";
+import { shouldHideMobileChrome } from "@/lib/layout-utils";
 import { cn } from "@/lib/utils";
 
 const iconMap = {
@@ -22,6 +23,12 @@ const iconMap = {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+
+  if (shouldHideMobileChrome(pathname, search ? `?${search}` : "")) {
+    return null;
+  }
 
   return (
     <nav

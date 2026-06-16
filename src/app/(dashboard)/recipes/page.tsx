@@ -39,7 +39,7 @@ export default async function RecipesPage({
   }
 
   return (
-    <div>
+    <div className="page-content">
       <header className="page-header flex items-center justify-between gap-4">
         <div>
           <h1 className="page-title">Meine Rezepte</h1>
@@ -55,7 +55,11 @@ export default async function RecipesPage({
         </Button>
       </header>
 
-      <RecipeSearch categories={categories} initialRecipes={recipes} />
+      <RecipeSearch
+        categories={categories}
+        customCategories={customCategories}
+        initialRecipes={recipes}
+      />
 
       {totalPages > 1 && (
         <div className="mt-8 flex justify-center gap-2">

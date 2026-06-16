@@ -97,7 +97,7 @@ export function RecipesHomeView({
     ) : null;
 
   return (
-    <div className="space-y-4">
+    <div className="page-content">
       <header className="page-header !mb-0">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

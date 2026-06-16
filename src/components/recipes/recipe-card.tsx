@@ -67,8 +67,8 @@ export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
 
   if (variant === "compact") {
     return (
-      <Link href={`/recipes/${recipe.id}`}>
-        <Card className="recipe-card flex flex-row overflow-hidden border-border/50 py-0 shadow-sm">
+      <Link href={`/recipes/${recipe.id}`} className="block min-w-0">
+        <div className="recipe-card flex min-w-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm ring-1 ring-foreground/[0.06]">
           <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-muted sm:h-28 sm:w-28">
             {image}
             {categoryName && (
@@ -77,13 +77,13 @@ export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
               </Badge>
             )}
           </div>
-          <CardContent className="flex min-w-0 flex-1 flex-col justify-center p-3 sm:p-4">
+          <div className="flex min-w-0 flex-1 flex-col justify-center p-3 sm:p-4">
             <h3 className="line-clamp-2 text-sm font-semibold leading-snug sm:text-base">
               {recipe.title}
             </h3>
             <div className="mt-1.5">{meta}</div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </Link>
     );
   }

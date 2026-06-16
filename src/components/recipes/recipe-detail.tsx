@@ -136,10 +136,10 @@ export function RecipeDetail({
   return (
     <article
       className={cn(
-        "animate-fade-in md:pb-0",
+        "animate-fade-in min-w-0 md:pb-0",
         isPublicView
           ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-          : "pb-[calc(9rem+env(safe-area-inset-bottom))]"
+          : "pb-[calc(10rem+env(safe-area-inset-bottom))]"
       )}
     >
       <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
@@ -354,7 +354,7 @@ export function RecipeDetail({
       />
 
       {recipe.is_public && (
-        <div className="mt-8 rounded-xl bg-secondary/50 p-4 text-center text-sm text-muted-foreground">
+        <div className="mt-8 mb-2 rounded-xl bg-secondary/50 p-4 text-center text-sm text-muted-foreground">
           <ExternalLink className="mx-auto mb-2 h-5 w-5" />
           <p className="mb-1">Öffentliche URL</p>
           <Link
@@ -368,57 +368,43 @@ export function RecipeDetail({
 
       <div
         className={cn(
-          "fixed inset-x-0 z-40 flex items-center gap-2 border-t border-border/60 bg-background/95 p-3 backdrop-blur-lg md:hidden",
-          isPublicView
-            ? "bottom-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
-            : "bottom-[calc(4rem+env(safe-area-inset-bottom))]"
+          "recipe-mobile-bar md:hidden",
+          isPublicView ? "recipe-mobile-bar--docked" : "recipe-mobile-bar--above-nav"
         )}
       >
-        <Button className="h-11 flex-1" asChild>
-          <Link href={cookHref}>
-            <ChefHat className="mr-2 h-4 w-4" />
-            Kochmodus
-          </Link>
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-11 w-11 shrink-0"
-          onClick={handleShare}
-          aria-label="Teilen"
-        >
-          <Share2 className="h-4 w-4" />
-        </Button>
-        {canCopyToCollection && (
+        <div className="mx-auto flex min-w-0 max-w-7xl items-center gap-2">
+          <Button className="h-11 min-w-0 flex-1" asChild>
+            <Link href={cookHref}>
+              <ChefHat className="mr-2 h-4 w-4 shrink-0" />
+              Kochmodus
+            </Link>
+          </Button>
           <Button
             variant="outline"
             size="icon"
             className="h-11 w-11 shrink-0"
-            onClick={handleCopy}
-            disabled={copying}
-            aria-label="In Sammlung übernehmen"
+            onClick={handleShare}
+            aria-label="Teilen"
           >
-            {copying ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
+            <Share2 className="h-4 w-4" />
           </Button>
-        )}
-        {currentUserId && !isPublicView && (
-          <Button
-            variant={favorited ? "default" : "outline"}
-            className="h-11 shrink-0 px-3"
-            onClick={handleFavorite}
-          >
-            <Heart
-              className={cn("mr-1.5 h-4 w-4", favorited && "fill-current")}
-            />
-            <span className="sr-only sm:not-sr-only">
-              {favorited ? "Favorit" : "Merken"}
-            </span>
-          </Button>
-        )}
+          {canCopyToCollection && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              onClick={handleCopy}
+              disabled={copying}
+              aria-label="In Sammlung übernehmen"
+            >
+              {copying ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
       <ConfirmDialog

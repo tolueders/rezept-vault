@@ -240,6 +240,116 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
   return applyCategoryFilter(unique);
 }
 
+export async function searchFavoriteRecipes(query: string, categoryFilter?: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: favRows } = await supabase
+    .from("recipe_favorites")
+    .select("recipe_id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const favoriteIds = favRows?.map((r) => r.recipe_id) ?? [];
+  if (favoriteIds.length === 0) return [];
+
+  const favoriteOrder = new Map(
+    favRows?.map((row, index) => [row.recipe_id, index]) ?? []
+  );
+
+  function applyCategoryFilter<
+    T extends { category_id: string | null; custom_category_id: string | null },
+  >(items: T[]): T[] {
+    if (!categoryFilter || categoryFilter === "all") return items;
+    if (categoryFilter.startsWith("custom:")) {
+      const id = categoryFilter.slice(7);
+      return items.filter((r) => r.custom_category_id === id);
+    }
+    if (categoryFilter.startsWith("std:")) {
+      const id = categoryFilter.slice(4);
+      return items.filter((r) => r.category_id === id);
+    }
+    return items.filter((r) => r.category_id === categoryFilter);
+  }
+
+  function applyCategoryToQuery(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q: any
+  ) {
+    if (!categoryFilter || categoryFilter === "all") return q;
+    if (categoryFilter.startsWith("custom:")) {
+      return q.eq("custom_category_id", categoryFilter.slice(7));
+    }
+    if (categoryFilter.startsWith("std:")) {
+      return q.eq("category_id", categoryFilter.slice(4));
+    }
+    return q.eq("category_id", categoryFilter);
+  }
+
+  const selectFields =
+    "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*)";
+
+  const trimmed = query.trim();
+  let results: Recipe[] = [];
+
+  if (!trimmed) {
+    let q = supabase.from("recipes").select(selectFields).in("id", favoriteIds);
+    q = applyCategoryToQuery(q);
+    const { data } = await q;
+    results = data || [];
+  } else {
+    const { data: recipes } = await supabase
+      .from("recipes")
+      .select(selectFields)
+      .in("id", favoriteIds)
+      .or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%`)
+      .limit(20);
+
+    const { data: tagMatches } = await supabase
+      .from("recipe_tags")
+      .select("recipe_id")
+      .in("recipe_id", favoriteIds)
+      .ilike("tag", `%${trimmed}%`);
+
+    const { data: byIngredient } = await supabase
+      .from("recipe_ingredients")
+      .select("recipe_id")
+      .in("recipe_id", favoriteIds)
+      .ilike("name", `%${trimmed}%`);
+
+    const extraIds = [
+      ...(tagMatches?.map((t) => t.recipe_id) ?? []),
+      ...(byIngredient?.map((i) => i.recipe_id) ?? []),
+    ];
+
+    let extraRecipes: typeof recipes = [];
+    if (extraIds.length) {
+      const { data } = await supabase
+        .from("recipes")
+        .select(selectFields)
+        .in("id", [...new Set(extraIds)]);
+      extraRecipes = data || [];
+    }
+
+    const combined = [...(recipes || []), ...extraRecipes];
+    const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
+    results = applyCategoryFilter(unique);
+  }
+
+  if (!trimmed) {
+    results = applyCategoryFilter(results);
+  }
+
+  results.sort(
+    (a, b) => (favoriteOrder.get(a.id) ?? 0) - (favoriteOrder.get(b.id) ?? 0)
+  );
+
+  return results;
+}
+
 export async function getPublicRecipes(
   page = 1,
   search = "",

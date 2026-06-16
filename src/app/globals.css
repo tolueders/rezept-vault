@@ -247,16 +247,40 @@ body {
   }
 }
 
-/* Fixierte Aktionsleiste im Einkaufsmodus – oberhalb der Bottom-Nav */
+/* Fixierte Aktionsleiste im Einkaufsmodus */
 .shop-action-bar {
   position: fixed;
   inset-inline: 0;
   bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
-  z-index: 40;
+  z-index: 50;
   border-top: 1px solid color-mix(in oklch, var(--border), transparent 15%);
   background: color-mix(in oklch, var(--background), transparent 5%);
   padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
   backdrop-filter: blur(12px);
+}
+
+.shop-action-bar--docked {
+  bottom: 0;
+}
+
+/* Rezeptdetail: fixierte Mobile-Aktionsleiste */
+.recipe-mobile-bar {
+  position: fixed;
+  inset-inline: 0;
+  z-index: 40;
+  border-top: 1px solid color-mix(in oklch, var(--border), transparent 15%);
+  background: color-mix(in oklch, var(--background), transparent 5%);
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  backdrop-filter: blur(12px);
+}
+
+.recipe-mobile-bar--above-nav {
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 0.75rem;
+}
+
+.recipe-mobile-bar--docked {
+  bottom: 0;
 }
 
 @media (min-width: 768px) {

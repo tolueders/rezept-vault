@@ -6,7 +6,7 @@ export default function FullscreenLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="h-[100dvh] overflow-hidden bg-background">
       {children}
       <Toaster position="top-center" richColors />
     </div>

@@ -1,14 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
+import { shouldHideMobileChrome } from "@/lib/layout-utils";
 import { cn } from "@/lib/utils";
 
 const FAB_PATHS = ["/recipes", "/favorites", "/discover"];
 
 export function MobileFab() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+
+  if (shouldHideMobileChrome(pathname, search ? `?${search}` : "")) {
+    return null;
+  }
+
   const show =
     FAB_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}?`)) &&
     !pathname.includes("/new");
