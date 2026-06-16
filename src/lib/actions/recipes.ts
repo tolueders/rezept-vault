@@ -172,6 +172,32 @@ export async function updateRecipe(
   return { success: true };
 }
 
+export async function updateRecipeImage(id: string, imageUrl: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Nicht autorisiert");
+
+  const { data: recipe, error } = await supabase
+    .from("recipes")
+    .update({ image_url: imageUrl })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("slug")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/recipes");
+  revalidatePath("/discover");
+  revalidatePath("/favorites");
+  revalidatePath(`/recipes/${id}`);
+  if (recipe?.slug) revalidatePath(`/recipe/${recipe.slug}`);
+
+  return { success: true };
+}
+
 export async function deleteRecipe(id: string) {
   const supabase = await createClient();
   const {

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -24,6 +23,7 @@ import { StarRating } from "@/components/recipes/star-rating";
 import { PortionCalculator } from "@/components/recipes/portion-calculator";
 import { CommentsSection } from "@/components/recipes/comments-section";
 import { AddToMealPlanDialog } from "@/components/recipes/add-to-meal-plan-dialog";
+import { RecipeDetailHero } from "@/components/recipes/recipe-detail-hero";
 import { RecipeVariants } from "@/components/recipes/recipe-variants";
 import {
   toggleFavorite,
@@ -174,22 +174,12 @@ export function RecipeDetail({
           : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
       )}
     >
-      <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
-        {recipe.image_url ? (
-          <Image
-            src={recipe.image_url}
-            alt={recipe.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            Kein Bild
-          </div>
-        )}
-      </div>
+      <RecipeDetailHero
+        recipeId={recipe.id}
+        title={recipe.title}
+        imageUrl={recipe.image_url}
+        canUpload={!isPublicView && isOwner}
+      />
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
