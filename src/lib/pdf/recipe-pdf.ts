@@ -7,8 +7,9 @@ const COLORS = {
   green: "#6B8F5E",
   brown: "#2C1A0E",
   beige: "#E8DDD0",
-  white: "#FFFFFF",
 };
+
+const CONTENT_WIDTH = 515;
 
 function formatExportDate(date: Date): string {
   return date.toLocaleDateString("de-DE", {
@@ -38,9 +39,9 @@ function getAverageRating(recipe: PdfExportRecipe): number {
   return recipe.average_rating ?? 0;
 }
 
-function formatStars(rating: number): string {
+function formatRating(rating: number): string {
   const rounded = Math.max(0, Math.min(5, Math.round(rating)));
-  return `${"★".repeat(rounded)}${"☆".repeat(5 - rounded)}`;
+  return `${"★".repeat(rounded)}${"☆".repeat(5 - rounded)} (${rounded}/5)`;
 }
 
 function groupByCategory(recipes: PdfExportRecipe[]): Map<string, PdfExportRecipe[]> {
@@ -54,19 +55,44 @@ function groupByCategory(recipes: PdfExportRecipe[]): Map<string, PdfExportRecip
   return new Map([...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "de")));
 }
 
+/** Nur für TOC sichtbar – kein sichtbarer Text im Dokument */
+function tocOnlyEntry(
+  label: string,
+  options: { indent?: number; bold?: boolean } = {}
+): Content {
+  return {
+    text: label,
+    tocItem: true,
+    tocStyle: {
+      fontSize: options.bold ? 12 : 10,
+      bold: options.bold,
+      color: COLORS.brown,
+    },
+    tocMargin: [options.indent ?? 0, options.bold ? 6 : 2, 0, 2],
+    fontSize: 0,
+    lineHeight: 0.1,
+    margin: [0, 0, 0, 0],
+    color: COLORS.beige,
+  };
+}
+
 function buildRecipePage(recipe: PdfExportRecipe): Content[] {
   const category = getCategoryName(recipe);
-  const rating = getAverageRating(recipe);
   const blocks: Content[] = [
     {
-      text: `  ${category}  `,
+      text: category,
       style: "categoryBadge",
-      margin: [0, 0, 0, 12],
+      margin: [0, 0, 0, 10],
     },
     {
       columns: [
         { text: recipe.title, style: "recipeTitle", width: "*" },
-        { text: formatStars(rating), style: "stars", width: "auto", alignment: "right" },
+        {
+          text: formatRating(getAverageRating(recipe)),
+          style: "stars",
+          width: "auto",
+          alignment: "right",
+        },
       ],
       margin: [0, 0, 0, 6],
     },
@@ -76,70 +102,87 @@ function buildRecipePage(recipe: PdfExportRecipe): Content[] {
     blocks.push({
       text: recipe.description.trim(),
       style: "recipeDescription",
-      margin: [0, 0, 0, 12],
+      margin: [0, 0, 0, 10],
     });
   }
 
   blocks.push({
-    text: [
-      `⏱ ${recipe.cook_time_minutes} Min Kochzeit   `,
-      `👥 ${recipe.servings} Portionen   `,
-      `📊 ${DIFFICULTY_LABELS[recipe.difficulty]}`,
-    ],
+    text: `Kochzeit: ${recipe.cook_time_minutes} Min.  |  Portionen: ${recipe.servings}  |  ${DIFFICULTY_LABELS[recipe.difficulty]}`,
     style: "metaLine",
     margin: [0, 0, 0, 10],
   });
 
   if (recipe.tags.length > 0) {
     blocks.push({
-      text: recipe.tags.map((t) => t.tag).join("  •  "),
+      text: recipe.tags.map((t) => t.tag).join("  ·  "),
       style: "tags",
-      margin: [0, 0, 0, 14],
+      margin: [0, 0, 0, 12],
     });
   }
 
   blocks.push({
-    canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: COLORS.beige }],
-    margin: [0, 0, 0, 14],
+    canvas: [
+      {
+        type: "line",
+        x1: 0,
+        y1: 0,
+        x2: CONTENT_WIDTH,
+        y2: 0,
+        lineWidth: 0.5,
+        lineColor: COLORS.beige,
+      },
+    ],
+    margin: [0, 0, 0, 12],
   });
 
   const ingredientLines = recipe.ingredients.map(
-    (ing) => `• ${formatAmount(ing.amount, ing.unit)} ${ing.name}`
-  );
-  const stepLines = recipe.steps.map(
-    (step, index) => `${index + 1}. ${step.instruction}`
+    (ing) => `${formatAmount(ing.amount, ing.unit)} ${ing.name}`
   );
 
   blocks.push({
     columns: [
       {
-        width: "48%",
+        width: "*",
         stack: [
           { text: "ZUTATEN", style: "sectionHeading" },
-          { text: ingredientLines.join("\n"), style: "bodyText", margin: [0, 8, 0, 0] },
+          {
+            ul: ingredientLines,
+            style: "bodyText",
+            margin: [0, 6, 0, 0],
+          },
         ],
       },
+      { width: 20, text: "" },
       {
-        width: "4%",
-        text: "",
-      },
-      {
-        width: "48%",
+        width: "*",
         stack: [
           { text: "ZUBEREITUNG", style: "sectionHeading" },
-          { text: stepLines.join("\n\n"), style: "bodyText", margin: [0, 8, 0, 0] },
+          {
+            ol: recipe.steps.map((s) => s.instruction),
+            style: "bodyText",
+            margin: [0, 6, 0, 0],
+          },
         ],
       },
     ],
-    columnGap: 10,
   });
 
   if (recipe.comments.length > 0) {
     blocks.push({
-      canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: COLORS.beige }],
-      margin: [0, 18, 0, 10],
+      canvas: [
+        {
+          type: "line",
+          x1: 0,
+          y1: 0,
+          x2: CONTENT_WIDTH,
+          y2: 0,
+          lineWidth: 0.5,
+          lineColor: COLORS.beige,
+        },
+      ],
+      margin: [0, 16, 0, 8],
     });
-    blocks.push({ text: "KOMMENTARE", style: "sectionHeading", margin: [0, 0, 0, 8] });
+    blocks.push({ text: "KOMMENTARE", style: "sectionHeading", margin: [0, 0, 0, 6] });
     blocks.push({
       ul: recipe.comments.map(
         (c) => `"${c.content.trim()}" (${formatCommentDate(c.created_at)})`
@@ -158,69 +201,72 @@ export function buildRecipesPdfDefinition(
 ): TDocumentDefinitions {
   const grouped = groupByCategory(recipes);
   const dateLabel = formatExportDate(exportDate);
+
   const content: Content[] = [
-    { text: "Meine Rezeptsammlung", style: "coverTitle", margin: [0, 120, 0, 16] },
-    { text: `${userName} • ${dateLabel}`, style: "coverSubtitle", margin: [0, 0, 0, 24] },
-    { text: `${recipes.length} Rezepte`, style: "coverCount", margin: [0, 0, 0, 32] },
+    { text: "Meine Rezeptsammlung", style: "coverTitle", margin: [0, 100, 0, 14] },
+    { text: `${userName} · ${dateLabel}`, style: "coverSubtitle", margin: [0, 0, 0, 20] },
+    { text: `${recipes.length} Rezepte`, style: "coverCount", margin: [0, 0, 0, 28] },
     {
-      canvas: [{ type: "line", x1: 180, y1: 0, x2: 335, y2: 0, lineWidth: 2, lineColor: COLORS.green }],
+      canvas: [
+        {
+          type: "line",
+          x1: 160,
+          y1: 0,
+          x2: 355,
+          y2: 0,
+          lineWidth: 2,
+          lineColor: COLORS.green,
+        },
+      ],
     },
     { text: "", pageBreak: "after" },
-    { text: "Inhaltsverzeichnis", style: "tocTitle", margin: [0, 0, 0, 20] },
-    { toc: { title: { text: "", style: "tocTitle" } }, pageBreak: "after" },
+    { text: "Inhaltsverzeichnis", style: "tocTitle", margin: [0, 0, 0, 16] },
+    { toc: { title: { text: "" } }, pageBreak: "after" },
   ];
 
   for (const [category, categoryRecipes] of grouped) {
-    content.push({
-      text: category,
-      tocItem: true,
-      tocStyle: { fontSize: 12, bold: true, color: COLORS.brown },
-      tocMargin: [0, 6, 0, 2],
-    });
+    content.push(tocOnlyEntry(category, { bold: true }));
 
     for (const recipe of categoryRecipes) {
+      content.push(tocOnlyEntry(recipe.title, { indent: 16 }));
       content.push({
-        text: recipe.title,
-        tocItem: true,
-        tocStyle: { fontSize: 10, color: COLORS.brown },
-        tocMargin: [16, 2, 0, 2],
         pageBreak: "before",
         stack: buildRecipePage(recipe),
-      } as unknown as Content);
+      });
     }
   }
 
   return {
     pageSize: "A4",
-    pageMargins: [40, 50, 40, 60],
-    defaultStyle: { font: "Roboto", color: COLORS.brown },
+    pageMargins: [40, 50, 40, 55],
+    defaultStyle: { font: "Roboto", color: COLORS.brown, fontSize: 10 },
     styles: {
       coverTitle: { fontSize: 28, bold: true, alignment: "center", color: COLORS.brown },
-      coverSubtitle: { fontSize: 14, alignment: "center", color: COLORS.green },
+      coverSubtitle: { fontSize: 13, alignment: "center", color: COLORS.green },
       coverCount: { fontSize: 12, alignment: "center", color: COLORS.brown },
       tocTitle: { fontSize: 20, bold: true, color: COLORS.brown },
-      tocCategory: { fontSize: 14, bold: true, color: COLORS.green, margin: [0, 0, 0, 8] },
       categoryBadge: {
         fontSize: 9,
+        bold: true,
         color: COLORS.green,
         background: COLORS.beige,
+        margin: [0, 2, 0, 2],
       },
       recipeTitle: { fontSize: 18, bold: true, color: COLORS.brown },
-      stars: { fontSize: 12, color: COLORS.green },
-      recipeDescription: { fontSize: 10, italics: true, color: COLORS.brown },
+      stars: { fontSize: 10, color: COLORS.green },
+      recipeDescription: { fontSize: 10, italics: true },
       metaLine: { fontSize: 9, color: COLORS.green },
       tags: { fontSize: 9, color: COLORS.green },
       sectionHeading: { fontSize: 11, bold: true, color: COLORS.brown },
-      bodyText: { fontSize: 10, lineHeight: 1.35, color: COLORS.brown },
+      bodyText: { fontSize: 10, lineHeight: 1.35 },
     },
     footer(currentPage, pageCount) {
       return {
         columns: [
           {
-            text: `Erstellt mit ${APP_NAME} App • ${dateLabel}`,
+            text: `Erstellt mit ${APP_NAME} · ${dateLabel}`,
             fontSize: 8,
             color: COLORS.green,
-            alignment: "left",
           },
           {
             text: `${currentPage} / ${pageCount}`,
@@ -229,7 +275,7 @@ export function buildRecipesPdfDefinition(
             alignment: "right",
           },
         ],
-        margin: [40, 0, 40, 20],
+        margin: [40, 0, 40, 18],
       };
     },
     content,

@@ -12,9 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, type ProfileFormValues } from "@/lib/validations/auth";
 import { updateProfile, uploadAvatar } from "@/lib/actions/profile";
+import dynamic from "next/dynamic";
 import { CustomCategoriesSection } from "@/components/profile/custom-categories-section";
 import { ChangePasswordSection } from "@/components/profile/change-password-section";
-import { RecipePdfExportButton } from "@/components/profile/recipe-pdf-export-button";
+
+const RecipePdfExportButton = dynamic(
+  () =>
+    import("@/components/profile/recipe-pdf-export-button").then(
+      (mod) => mod.RecipePdfExportButton
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 animate-pulse rounded-2xl border border-border/50 bg-card" />
+    ),
+  }
+);
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { CustomCategory, Profile } from "@/types/database";

@@ -50,6 +50,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-inter);
+  --font-heading: var(--font-inter);
 }
 
 * {
