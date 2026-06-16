@@ -148,8 +148,8 @@ export function RecipeDetail({
       className={cn(
         "animate-fade-in md:pb-0",
         isPublicView
-          ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
-          : "pb-[calc(3.75rem+env(safe-area-inset-bottom))]"
+          ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+          : "pb-[calc(9rem+env(safe-area-inset-bottom))]"
       )}
     >
       <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:mb-8 sm:aspect-[16/9] sm:rounded-2xl md:aspect-[21/9]">
@@ -364,7 +364,13 @@ export function RecipeDetail({
       {recipe.is_public && (
         <div className="mt-8 rounded-xl bg-secondary/50 p-4 text-center text-sm text-muted-foreground">
           <ExternalLink className="mx-auto mb-2 h-5 w-5" />
-          Öffentliche URL: /recipe/{recipe.slug}
+          <p className="mb-1">Öffentliche URL</p>
+          <Link
+            href={`/recipe/${recipe.slug}`}
+            className="break-all font-medium text-primary underline-offset-4 hover:underline"
+          >
+            /recipe/{recipe.slug}
+          </Link>
         </div>
       )}
 
