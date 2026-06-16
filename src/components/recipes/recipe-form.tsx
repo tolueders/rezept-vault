@@ -82,11 +82,13 @@ export function RecipeForm({
   const [imagePreview, setImagePreview] = useState<string | null>(
     recipe?.image_url || null
   );
+  const [analysisPhotoPreview, setAnalysisPhotoPreview] = useState<string | null>(
+    null
+  );
   const [tagInput, setTagInput] = useState("");
   const [importTab, setImportTab] = useState<ImportMode>("manual");
 
-  const showHeroUploader =
-    mode !== "create" || importTab !== "photo" || Boolean(imagePreview);
+  const showHeroUploader = mode !== "create" || importTab !== "photo";
 
   const defaultValues: RecipeFormValues = {
     title: recipe?.title || "",
@@ -290,8 +292,7 @@ export function RecipeForm({
 
       applyExtraction(data);
 
-      setImageFile(prepared);
-      setImagePreview(URL.createObjectURL(prepared));
+      setAnalysisPhotoPreview(URL.createObjectURL(prepared));
       toast.success("Rezept erkannt!", {
         description: "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
@@ -367,7 +368,7 @@ export function RecipeForm({
           importUrl={importUrl}
           onImportUrlChange={setImportUrl}
           onUrlImport={handleUrlImport}
-          imagePreview={imagePreview}
+          imagePreview={analysisPhotoPreview}
           onPhotoSelect={handlePhotoAnalysis}
         />
       )}
