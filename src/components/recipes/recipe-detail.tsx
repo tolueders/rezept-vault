@@ -245,13 +245,6 @@ export function RecipeDetail({
               defaultServings={recipe.servings}
             />
           )}
-          {currentUserId && !isPublicView && (
-            <Button variant="outline" size="icon" onClick={handleFavorite}>
-              <Heart
-                className={`h-4 w-4 ${favorited ? "fill-primary text-primary" : ""}`}
-              />
-            </Button>
-          )}
           <Button variant="outline" size="sm" onClick={handleShare}>
             <Share2 className="mr-1 h-4 w-4" />
             Teilen
@@ -262,6 +255,19 @@ export function RecipeDetail({
           </Button>
         </div>
       </div>
+
+      {currentUserId && !isPublicView && (
+        <Button
+          variant={favorited ? "default" : "outline"}
+          className="mb-4 h-11 w-full sm:mb-6 sm:w-auto"
+          onClick={handleFavorite}
+        >
+          <Heart
+            className={cn("mr-2 h-4 w-4", favorited && "fill-current")}
+          />
+          {favorited ? "In deinen Favoriten" : "Zu Favoriten hinzufügen"}
+        </Button>
+      )}
 
       {!isPublicView && isOwner && (
         <div className="mb-4 flex flex-wrap gap-2 md:hidden">
@@ -401,15 +407,16 @@ export function RecipeDetail({
         )}
         {currentUserId && !isPublicView && (
           <Button
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 shrink-0"
+            variant={favorited ? "default" : "outline"}
+            className="h-11 shrink-0 px-3"
             onClick={handleFavorite}
-            aria-label="Favorit"
           >
             <Heart
-              className={cn("h-4 w-4", favorited && "fill-primary text-primary")}
+              className={cn("mr-1.5 h-4 w-4", favorited && "fill-current")}
             />
+            <span className="sr-only sm:not-sr-only">
+              {favorited ? "Favorit" : "Merken"}
+            </span>
           </Button>
         )}
       </div>

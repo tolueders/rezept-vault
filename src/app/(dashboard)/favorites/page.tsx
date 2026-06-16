@@ -20,9 +20,9 @@ export default async function FavoritesPage() {
           <p className="text-muted-foreground">Noch keine Favoriten</p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <RecipeCard key={recipe.id} recipe={recipe} variant="compact" />
           ))}
         </div>
       )}
