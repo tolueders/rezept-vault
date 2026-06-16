@@ -187,8 +187,11 @@ export function RecipeForm({
     }
   }
 
-  function applyExtraction(raw: Parameters<typeof normalizeRecipeExtraction>[0]) {
-    const data = normalizeRecipeExtraction(raw);
+  function applyExtraction(
+    raw: Parameters<typeof normalizeRecipeExtraction>[0],
+    contextText?: string
+  ) {
+    const data = normalizeRecipeExtraction(raw, contextText);
     const customCategoryId = form.getValues("custom_category_id");
     const categoryId = customCategoryId
       ? undefined
@@ -207,6 +210,8 @@ export function RecipeForm({
       ingredients: data.ingredients,
       steps: data.steps,
     });
+
+    return data;
   }
 
   function getFirstValidationMessage(errors: FieldErrors<RecipeFormValues>): string {
@@ -246,9 +251,9 @@ export function RecipeForm({
         importText,
         scanMemoryRef.current
       );
-      applyExtraction(data);
+      const extracted = applyExtraction(data, importText);
       toast.success(fromCache ? "Rezept aus Cache geladen" : "Rezept erkannt!", {
-        description: "Bitte prüfe und bearbeite die extrahierten Daten.",
+        description: `${extracted.servings} Portionen · Bitte prüfe die extrahierten Daten.`,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Text-Import fehlgeschlagen");
@@ -265,9 +270,9 @@ export function RecipeForm({
         importUrl,
         scanMemoryRef.current
       );
-      applyExtraction(data);
+      const extracted = applyExtraction(data);
       toast.success(fromCache ? "Rezept aus Cache geladen" : "Rezept importiert!", {
-        description: "Bitte prüfe und bearbeite die extrahierten Daten.",
+        description: `${extracted.servings} Portionen · Bitte prüfe die extrahierten Daten.`,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Link-Import fehlgeschlagen");
@@ -283,7 +288,7 @@ export function RecipeForm({
         files,
         scanMemoryRef.current
       );
-      applyExtraction(data);
+      const extracted = applyExtraction(data);
       setPhotoAnalyzed(true);
       if (previewUrls[0] && files[0]) {
         setImageFile(files[0]);
@@ -292,8 +297,8 @@ export function RecipeForm({
       toast.success(fromCache ? "Foto bereits analysiert" : "Rezept erkannt!", {
         description:
           files.length > 1
-            ? `${files.length} Fotos ausgewertet — bitte prüfe die extrahierten Daten.`
-            : "Bitte prüfe und bearbeite die extrahierten Daten.",
+            ? `${files.length} Fotos ausgewertet · ${extracted.servings} Portionen — bitte prüfen.`
+            : `${extracted.servings} Portionen · Bitte prüfe die extrahierten Daten.`,
       });
     } catch (err) {
       toast.error(

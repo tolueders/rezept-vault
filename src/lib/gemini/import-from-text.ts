@@ -18,5 +18,5 @@ export async function parseRecipeText(
   const model = getGeminiModel();
   const result = await model.generateContent(GEMINI_TEXT_PROMPT_PREFIX + trimmed);
   const parsed = parseGeminiJson<GeminiRecipeExtraction>(result.response.text());
-  return normalizeRecipeExtraction(parsed);
+  return normalizeRecipeExtraction(parsed, trimmed);
 }

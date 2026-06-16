@@ -42,7 +42,7 @@ const RECIPE_JSON_SCHEMA: Schema = {
       },
     },
   },
-  required: ["title", "ingredients", "steps"],
+  required: ["title", "servings", "ingredients", "steps"],
 };
 
 export function getGeminiModel() {

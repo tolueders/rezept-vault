@@ -1,0 +1,146 @@
+import { MAX_RECIPE_TEXT_LENGTH } from "@/lib/gemini/prompts";
+
+const RECIPE_SECTION_KEYWORDS = [
+  "zutaten",
+  "ingredients",
+  "zubereitung",
+  "anleitung",
+  "directions",
+  "instructions",
+];
+
+function decodeHtmlEntities(html: string): string {
+  return html
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stripHtml(html: string): string {
+  return decodeHtmlEntities(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+  );
+}
+
+function isRecipeType(type: unknown): boolean {
+  const types = Array.isArray(type) ? type : [type];
+  return types.some(
+    (value) =>
+      value === "Recipe" ||
+      value === "https://schema.org/Recipe" ||
+      String(value).endsWith("/Recipe")
+  );
+}
+
+function findRecipeNode(node: unknown): Record<string, unknown> | null {
+  if (!node || typeof node !== "object") return null;
+  const obj = node as Record<string, unknown>;
+
+  if (isRecipeType(obj["@type"])) return obj;
+
+  if (Array.isArray(obj["@graph"])) {
+    for (const item of obj["@graph"]) {
+      const found = findRecipeNode(item);
+      if (found) return found;
+    }
+  }
+
+  return null;
+}
+
+function flattenInstructions(value: unknown): string[] {
+  if (!value) return [];
+  if (typeof value === "string") return [value.trim()].filter(Boolean);
+  if (!Array.isArray(value)) {
+    if (typeof value === "object" && value !== null) {
+      const obj = value as Record<string, unknown>;
+      if (typeof obj.text === "string") return [obj.text.trim()].filter(Boolean);
+      if (Array.isArray(obj.itemListElement)) {
+        return flattenInstructions(obj.itemListElement);
+      }
+    }
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (typeof item === "string") return item.trim() ? [item.trim()] : [];
+    if (typeof item === "object" && item !== null) {
+      const obj = item as Record<string, unknown>;
+      if (typeof obj.text === "string") return obj.text.trim() ? [obj.text.trim()] : [];
+      if (typeof obj.name === "string") return obj.name.trim() ? [obj.name.trim()] : [];
+      if (Array.isArray(obj.itemListElement)) return flattenInstructions(obj.itemListElement);
+    }
+    return [];
+  });
+}
+
+function extractJsonLdRecipeSnippet(html: string): string | null {
+  const pattern =
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(html)) !== null) {
+    try {
+      const data = JSON.parse(match[1].trim()) as unknown;
+      const nodes = Array.isArray(data) ? data : [data];
+
+      for (const node of nodes) {
+        const recipe = findRecipeNode(node);
+        if (!recipe) continue;
+
+        const compact = {
+          title: recipe.name,
+          description:
+            typeof recipe.description === "string"
+              ? recipe.description.slice(0, 280)
+              : undefined,
+          servings: recipe.recipeYield,
+          cook_time_minutes: recipe.totalTime ?? recipe.cookTime,
+          ingredients: recipe.recipeIngredient,
+          steps: flattenInstructions(recipe.recipeInstructions),
+        };
+
+        const json = JSON.stringify(compact);
+        if (json.length >= 40) {
+          return json.slice(0, MAX_RECIPE_TEXT_LENGTH);
+        }
+      }
+    } catch {
+      // Ungültiges JSON-LD ignorieren
+    }
+  }
+
+  return null;
+}
+
+function focusRecipeSection(text: string): string | null {
+  const lower = text.toLowerCase();
+  let start = -1;
+
+  for (const keyword of RECIPE_SECTION_KEYWORDS) {
+    const index = lower.indexOf(keyword);
+    if (index !== -1 && (start === -1 || index < start)) {
+      start = index;
+    }
+  }
+
+  if (start === -1) return null;
+  return text.slice(Math.max(0, start - 120), start + MAX_RECIPE_TEXT_LENGTH);
+}
+
+/** Liefert möglichst wenig, aber rezeptrelevanten Text für Gemini. */
+export function extractRecipeTextForGemini(html: string): string {
+  const jsonLd = extractJsonLdRecipeSnippet(html);
+  if (jsonLd) return jsonLd;
+
+  const plain = stripHtml(html);
+  const focused = focusRecipeSection(plain);
+  return (focused ?? plain).slice(0, MAX_RECIPE_TEXT_LENGTH);
+}
