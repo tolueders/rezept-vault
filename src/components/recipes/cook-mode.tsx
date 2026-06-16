@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,22 +28,12 @@ export function CookMode({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrolling = useRef(false);
 
-  const [mounted, setMounted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const sortedSteps = [...steps].sort((a, b) => a.sort_order - b.sort_order);
   const scaled = scaleIngredients(ingredients, servings, servings);
-
-  useEffect(() => {
-    setMounted(true);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
-  }, []);
 
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
@@ -79,7 +68,7 @@ export function CookMode({
   }, []);
 
   useEffect(() => {
-    scrollToStep(currentStep, false);
+    scrollToStep(0, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial layout only
   }, []);
 
@@ -114,10 +103,9 @@ export function CookMode({
   }
 
   if (sortedSteps.length === 0) {
-    if (!mounted) return null;
-    return createPortal(
+    return (
       <div
-        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background p-6"
+        className="flex min-h-[100dvh] flex-col items-center justify-center bg-background p-6"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -127,14 +115,13 @@ export function CookMode({
           Dieses Rezept hat noch keine Zubereitungsschritte.
         </p>
         <Button onClick={handleClose}>Zurück</Button>
-      </div>,
-      document.body
+      </div>
     );
   }
 
-  const content = (
+  return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-background"
+      className="flex min-h-[100dvh] flex-col bg-background"
       style={{
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -257,7 +244,4 @@ export function CookMode({
       </div>
     </div>
   );
-
-  if (!mounted) return null;
-  return createPortal(content, document.body);
 }

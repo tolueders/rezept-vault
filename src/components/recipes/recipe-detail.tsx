@@ -23,7 +23,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { StarRating } from "@/components/recipes/star-rating";
 import { PortionCalculator } from "@/components/recipes/portion-calculator";
 import { CommentsSection } from "@/components/recipes/comments-section";
-import { CookMode } from "@/components/recipes/cook-mode";
 import { AddToMealPlanDialog } from "@/components/recipes/add-to-meal-plan-dialog";
 import { RecipeVariants } from "@/components/recipes/recipe-variants";
 import {
@@ -60,9 +59,12 @@ export function RecipeDetail({
   const router = useRouter();
   const [favorited, setFavorited] = useState(recipe.is_favorited || false);
   const [userRating, setUserRating] = useState(recipe.user_rating || 0);
-  const [cookMode, setCookMode] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [copying, setCopying] = useState(false);
+
+  const cookHref = isPublicView
+    ? `/recipe/${recipe.slug}/cook`
+    : `/recipes/${recipe.id}/cook`;
 
   const canCopyToCollection =
     recipe.is_public && !!currentUserId && !isOwner && !userCopyId;
@@ -129,18 +131,6 @@ export function RecipeDetail({
     } catch {
       // User cancelled share sheet
     }
-  }
-
-  if (cookMode) {
-    return (
-      <CookMode
-        steps={recipe.steps}
-        ingredients={recipe.ingredients}
-        servings={recipe.servings}
-        title={recipe.title}
-        onClose={() => setCookMode(false)}
-      />
-    );
   }
 
   return (
@@ -249,9 +239,11 @@ export function RecipeDetail({
             <Share2 className="mr-1 h-4 w-4" />
             Teilen
           </Button>
-          <Button size="sm" onClick={() => setCookMode(true)}>
-            <ChefHat className="mr-1 h-4 w-4" />
-            Kochmodus
+          <Button size="sm" asChild>
+            <Link href={cookHref}>
+              <ChefHat className="mr-1 h-4 w-4" />
+              Kochmodus
+            </Link>
           </Button>
         </div>
       </div>
@@ -382,9 +374,11 @@ export function RecipeDetail({
             : "bottom-[calc(4rem+env(safe-area-inset-bottom))]"
         )}
       >
-        <Button className="h-11 flex-1" onClick={() => setCookMode(true)}>
-          <ChefHat className="mr-2 h-4 w-4" />
-          Kochmodus
+        <Button className="h-11 flex-1" asChild>
+          <Link href={cookHref}>
+            <ChefHat className="mr-2 h-4 w-4" />
+            Kochmodus
+          </Link>
         </Button>
         <Button
           variant="outline"
