@@ -85,6 +85,7 @@ export async function createRecipe(
   }
 
   revalidatePath("/recipes");
+  revalidatePath("/discover");
   return recipe;
 }
 
@@ -153,6 +154,7 @@ export async function updateRecipe(
   );
 
   revalidatePath("/recipes");
+  revalidatePath("/discover");
   revalidatePath(`/recipes/${id}`);
   return { success: true };
 }
@@ -172,6 +174,7 @@ export async function deleteRecipe(id: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/recipes");
+  revalidatePath("/discover");
 }
 
 export async function toggleFavorite(recipeId: string) {

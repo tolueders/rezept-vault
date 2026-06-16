@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RecipeVisibilityToggle } from "@/components/recipes/recipe-visibility-toggle";
 import {
   Select,
   SelectContent,
@@ -372,6 +372,15 @@ export function RecipeForm({
 
       <section className="form-section space-y-4">
         <h2 className="form-section-title">Grunddaten</h2>
+
+        <div className="space-y-2">
+          <Label>Sichtbarkeit</Label>
+          <RecipeVisibilityToggle
+            value={form.watch("is_public")}
+            onChange={(isPublic) => form.setValue("is_public", isPublic)}
+          />
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="title">Titel</Label>
           <Input id="title" {...form.register("title")} />
@@ -464,24 +473,6 @@ export function RecipeForm({
               {...form.register("cook_time_minutes", numberFieldOptions)}
             />
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="is_public"
-              checked={form.watch("is_public")}
-              onCheckedChange={(checked) =>
-                form.setValue("is_public", checked === true)
-              }
-            />
-            <Label htmlFor="is_public" className="cursor-pointer">
-              Rezept öffentlich teilen
-            </Label>
-          </div>
-          <p className="pl-6 text-xs text-muted-foreground">
-            Öffentliche Rezepte erscheinen unter Entdecken und können geteilt werden.
-          </p>
         </div>
 
         <div className="space-y-2">

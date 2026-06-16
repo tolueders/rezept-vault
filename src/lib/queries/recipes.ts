@@ -256,29 +256,57 @@ export async function getPublicRecipes(
   return { recipes: data || [], total: count || 0 };
 }
 
-export async function searchPublicRecipes(query: string, categoryId?: string) {
+export async function searchPublicRecipes(query: string, categoryFilter?: string) {
   const supabase = await createClient();
   const trimmed = query.trim();
+
+  function applyCategoryFilter<
+    T extends { category_id: string | null; custom_category_id: string | null },
+  >(items: T[]): T[] {
+    if (!categoryFilter || categoryFilter === "all") return items;
+    if (categoryFilter.startsWith("custom:")) {
+      const id = categoryFilter.slice(7);
+      return items.filter((r) => r.custom_category_id === id);
+    }
+    if (categoryFilter.startsWith("std:")) {
+      const id = categoryFilter.slice(4);
+      return items.filter((r) => r.category_id === id);
+    }
+    return items.filter((r) => r.category_id === categoryFilter);
+  }
+
+  function applyCategoryToQuery(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q: any
+  ) {
+    if (!categoryFilter || categoryFilter === "all") return q;
+    if (categoryFilter.startsWith("custom:")) {
+      return q.eq("custom_category_id", categoryFilter.slice(7));
+    }
+    if (categoryFilter.startsWith("std:")) {
+      return q.eq("category_id", categoryFilter.slice(4));
+    }
+    return q.eq("category_id", categoryFilter);
+  }
+
+  const selectFields =
+    "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)";
 
   if (!trimmed) {
     let q = supabase
       .from("recipes")
-      .select(
-        "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
-      )
+      .select(selectFields)
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
-    if (categoryId) q = q.eq("category_id", categoryId);
+    q = applyCategoryToQuery(q);
     const { data } = await q;
     return data || [];
   }
 
   const { data: recipes } = await supabase
     .from("recipes")
-    .select(
-      "*, category:recipe_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
-    )
+    .select(selectFields)
     .eq("is_public", true)
     .or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%`)
     .limit(20);
@@ -288,27 +316,30 @@ export async function searchPublicRecipes(query: string, categoryId?: string) {
     .select("recipe_id")
     .ilike("tag", `%${trimmed}%`);
 
-  let tagRecipes: typeof recipes = [];
-  if (tagMatches?.length) {
-    const ids = [...new Set(tagMatches.map((t) => t.recipe_id))];
+  const { data: byIngredient } = await supabase
+    .from("recipe_ingredients")
+    .select("recipe_id")
+    .ilike("name", `%${trimmed}%`);
+
+  const extraIds = [
+    ...(tagMatches?.map((t) => t.recipe_id) ?? []),
+    ...(byIngredient?.map((i) => i.recipe_id) ?? []),
+  ];
+
+  let extraRecipes: typeof recipes = [];
+  if (extraIds.length) {
     const { data } = await supabase
       .from("recipes")
-      .select(
-        "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)"
-      )
+      .select(selectFields)
       .eq("is_public", true)
-      .in("id", ids);
-    tagRecipes = data || [];
+      .in("id", [...new Set(extraIds)]);
+    extraRecipes = data || [];
   }
 
-  const combined = [...(recipes || []), ...tagRecipes];
-  let unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
+  const combined = [...(recipes || []), ...extraRecipes];
+  const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
 
-  if (categoryId) {
-    unique = unique.filter((r) => r.category_id === categoryId);
-  }
-
-  return unique;
+  return applyCategoryFilter(unique);
 }
 
 export async function getCategories() {
