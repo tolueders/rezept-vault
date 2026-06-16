@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Clock, Star, Users } from "lucide-react";
+import { Clock, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { DIFFICULTY_LABELS } from "@/lib/constants";
+import { RecipeCardTitle } from "@/components/recipes/recipe-card-title";
+import { DIFFICULTY_LABELS, MAX_RECIPE_TAGS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import type { Recipe, RecipeCategory, RecipeTag, CustomCategory } from "@/types/database";
 
 interface RecipeCardProps {
@@ -15,32 +17,66 @@ interface RecipeCardProps {
   variant?: "default" | "compact";
 }
 
-export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
-  const categoryName = recipe.category?.name || recipe.custom_category?.name;
+function RecipeCardMeta({
+  recipe,
+  tags,
+  compact = false,
+  className,
+}: {
+  recipe: RecipeCardProps["recipe"];
+  tags: Pick<RecipeTag, "id" | "tag">[];
+  compact?: boolean;
+  className?: string;
+}) {
+  const visibleTags = tags.slice(0, MAX_RECIPE_TAGS);
 
-  const meta = (
-    <>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Clock className="h-3.5 w-3.5" />
-          {recipe.cook_time_minutes} Min.
-        </span>
-        <span className="flex items-center gap-1">
-          <Users className="h-3.5 w-3.5" />
-          {recipe.servings}
-        </span>
-        {recipe.rating_count > 0 && (
-          <span className="flex items-center gap-1">
-            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+  return (
+    <p
+      className={cn(
+        "flex w-full min-w-0 items-center gap-x-0 overflow-hidden text-muted-foreground",
+        compact ? "text-[11px] sm:text-xs" : "min-h-5 text-sm",
+        className
+      )}
+    >
+      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+        <Clock className={cn("shrink-0", compact ? "h-3 w-3" : "h-3.5 w-3.5")} />
+        {recipe.cook_time_minutes} Min.
+      </span>
+      <span className="shrink-0 px-1.5 text-border/80">·</span>
+      <span className="shrink-0 whitespace-nowrap">
+        {DIFFICULTY_LABELS[recipe.difficulty]}
+      </span>
+      {recipe.rating_count > 0 && (
+        <>
+          <span className="shrink-0 px-1.5 text-border/80">·</span>
+          <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+            <Star
+              className={cn(
+                "shrink-0 fill-primary text-primary",
+                compact ? "h-3 w-3" : "h-3.5 w-3.5"
+              )}
+            />
             {recipe.average_rating.toFixed(1)}
           </span>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {DIFFICULTY_LABELS[recipe.difficulty]}
-      </p>
-    </>
+        </>
+      )}
+      {visibleTags.length > 0 && (
+        <span className="min-w-0 truncate">
+          {visibleTags.map((tag) => (
+            <span key={tag.id}>
+              <span className="px-1.5 text-border/80">·</span>
+              {tag.tag}
+            </span>
+          ))}
+        </span>
+      )}
+    </p>
   );
+}
+
+export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
+  const categoryName = recipe.category?.name || recipe.custom_category?.name;
+  const tags = recipe.tags ?? [];
 
   const image = (
     <>
@@ -68,8 +104,8 @@ export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
   if (variant === "compact") {
     return (
       <Link href={`/recipes/${recipe.id}`} className="block min-w-0">
-        <div className="recipe-card flex min-w-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm ring-1 ring-foreground/[0.06]">
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-muted sm:h-28 sm:w-28">
+        <div className="recipe-card flex h-24 min-w-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm ring-1 ring-foreground/[0.06] sm:h-28">
+          <div className="relative h-full w-24 shrink-0 overflow-hidden bg-muted sm:w-28">
             {image}
             {categoryName && (
               <Badge className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-0.75rem)] truncate bg-background/90 px-1.5 py-0 text-[10px] text-foreground">
@@ -77,11 +113,11 @@ export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
               </Badge>
             )}
           </div>
-          <div className="flex min-w-0 flex-1 flex-col justify-center p-3 sm:p-4">
-            <h3 className="line-clamp-2 text-sm font-semibold leading-snug sm:text-base">
-              {recipe.title}
-            </h3>
-            <div className="mt-1.5">{meta}</div>
+          <div className="@container/recipe-card flex min-w-0 flex-1 flex-col justify-center overflow-hidden px-3.5 pt-3.5 pb-2 sm:px-4 sm:pt-4 sm:pb-2.5">
+            <div className="flex w-full flex-col gap-1 sm:gap-1.5">
+              <RecipeCardTitle title={recipe.title} compact />
+              <RecipeCardMeta recipe={recipe} tags={tags} compact />
+            </div>
           </div>
         </div>
       </Link>
@@ -99,11 +135,11 @@ export function RecipeCard({ recipe, variant = "default" }: RecipeCardProps) {
             </Badge>
           )}
         </div>
-        <CardContent className="p-4 sm:p-5">
-          <h3 className="mb-2.5 line-clamp-2 text-base font-semibold leading-snug sm:text-lg">
-            {recipe.title}
-          </h3>
-          {meta}
+        <CardContent className="@container/recipe-card flex min-h-[6.5rem] flex-col justify-center px-4 py-4 sm:min-h-[7rem] sm:p-5">
+          <div className="flex w-full flex-col gap-2">
+            <RecipeCardTitle title={recipe.title} />
+            <RecipeCardMeta recipe={recipe} tags={tags} />
+          </div>
         </CardContent>
       </Card>
     </Link>

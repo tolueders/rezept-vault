@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { generateSlug } from "@/lib/recipe-utils";
+import { MAX_RECIPE_TAGS } from "@/lib/constants";
 import type { RecipeFormValues } from "@/lib/validations/auth";
 import { revalidatePath } from "next/cache";
 
@@ -19,6 +20,10 @@ function normalizeRecipeFormData(data: RecipeFormValues): RecipeFormValues {
       ...ingredient,
       amount: Math.max(0, toNumber(ingredient.amount, 0)),
     })),
+    tags: data.tags
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, MAX_RECIPE_TAGS),
   };
 }
 

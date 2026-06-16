@@ -189,7 +189,8 @@ export function RecipeImportPanel({
                 </div>
                 <h3 className="text-base font-semibold">Rezept fotografieren</h3>
                 <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                  Lade ein Foto hoch — die KI erkennt Titel, Zutaten und Zubereitung.
+                  Lade ein Foto hoch — Titel, Zutaten und Zubereitung werden
+                  automatisch übernommen.
                 </p>
                 <Button
                   type="button"
@@ -236,7 +237,8 @@ export function RecipeImportPanel({
               <div>
                 <h3 className="text-base font-semibold">Von Webseite importieren</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Link zu einem Online-Rezept einfügen — die KI übernimmt den Rest.
+                  Link zu einem Online-Rezept einfügen — Titel, Zutaten und
+                  Zubereitung werden automatisch übernommen.
                 </p>
               </div>
             </div>

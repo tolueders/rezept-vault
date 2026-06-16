@@ -13,7 +13,6 @@ import {
   Link2,
   Share2,
   Trash2,
-  Users,
   ChefHat,
   Loader2,
 } from "lucide-react";
@@ -215,10 +214,6 @@ export function RecipeDetail({
             <span className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
               {recipe.cook_time_minutes} Min.
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {recipe.servings} Portionen
             </span>
             <span>{DIFFICULTY_LABELS[recipe.difficulty]}</span>
             {recipe.author && (

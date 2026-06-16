@@ -37,7 +37,7 @@ import {
   scanRecipeUrl,
 } from "@/lib/resolve-scan.client";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
-import { DIFFICULTY_LABELS } from "@/lib/constants";
+import { DIFFICULTY_LABELS, MAX_RECIPE_TAGS } from "@/lib/constants";
 import type {
   CustomCategory,
   GeminiRecipeExtraction,
@@ -109,7 +109,7 @@ export function RecipeForm({
     cook_time_minutes: recipe?.cook_time_minutes || 30,
     difficulty: recipe?.difficulty || "mittel",
     is_public: recipe?.is_public || false,
-    tags: recipe?.tags?.map((t) => t.tag) || [],
+    tags: recipe?.tags?.map((t) => t.tag).slice(0, MAX_RECIPE_TAGS) || [],
     ingredients: recipe?.ingredients?.length
       ? recipe.ingredients.map((i) => ({
           name: i.name,
@@ -326,6 +326,10 @@ export function RecipeForm({
     const tag = tagInput.trim();
     if (!tag) return;
     const current = form.getValues("tags");
+    if (current.length >= MAX_RECIPE_TAGS) {
+      toast.error(`Maximal ${MAX_RECIPE_TAGS} Tags erlaubt`);
+      return;
+    }
     if (!current.includes(tag)) {
       form.setValue("tags", [...current, tag]);
     }
@@ -476,7 +480,7 @@ export function RecipeForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Tags</Label>
+          <Label>Tags (max. {MAX_RECIPE_TAGS})</Label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               value={tagInput}
@@ -484,8 +488,15 @@ export function RecipeForm({
               placeholder="z.B. Vegan, Schnell…"
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
               className="flex-1"
+              disabled={form.watch("tags").length >= MAX_RECIPE_TAGS}
             />
-            <Button type="button" variant="outline" onClick={addTag} className="sm:shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addTag}
+              className="sm:shrink-0"
+              disabled={form.watch("tags").length >= MAX_RECIPE_TAGS}
+            >
               Hinzufügen
             </Button>
           </div>

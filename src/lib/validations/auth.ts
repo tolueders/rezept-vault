@@ -66,7 +66,7 @@ export const recipeSchema = z
     cook_time_minutes: z.number().min(0),
     difficulty: z.enum(["einfach", "mittel", "schwer"]),
     is_public: z.boolean(),
-    tags: z.array(z.string()),
+    tags: z.array(z.string()).max(3, "Maximal 3 Tags erlaubt"),
     ingredients: z.array(ingredientSchema).min(1, "Mindestens eine Zutat"),
     steps: z.array(stepSchema).min(1, "Mindestens ein Schritt"),
   })

@@ -32,6 +32,8 @@ export const WEEKDAYS = [
 
 export const RECIPES_PER_PAGE = 12;
 
+export const MAX_RECIPE_TAGS = 3;
+
 export const STORAGE_BUCKETS = {
   recipeImages: "recipe-images",
   avatars: "avatars",
