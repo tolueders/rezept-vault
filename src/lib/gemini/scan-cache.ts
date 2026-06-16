@@ -31,7 +31,7 @@ export async function saveCachedExtraction(
   extraction: GeminiRecipeExtraction
 ): Promise<void> {
   const supabase = await createClient();
-  await supabase.from("recipe_scan_cache").upsert(
+  const { error } = await supabase.from("recipe_scan_cache").upsert(
     {
       user_id: userId,
       content_hash: contentHash,
@@ -40,6 +40,10 @@ export async function saveCachedExtraction(
     },
     { onConflict: "user_id,content_hash" }
   );
+
+  if (error) {
+    console.warn("Scan-Cache speichern fehlgeschlagen:", error.message);
+  }
 }
 
 export async function withScanCache(

@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, type ProfileFormValues } from "@/lib/validations/auth";
 import { updateProfile, uploadAvatar } from "@/lib/actions/profile";
 import { CustomCategoriesSection } from "@/components/profile/custom-categories-section";
+import { ChangePasswordSection } from "@/components/profile/change-password-section";
+import { RecipePdfExportButton } from "@/components/profile/recipe-pdf-export-button";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { CustomCategory, Profile } from "@/types/database";
@@ -117,6 +119,10 @@ export function ProfileView({ profile, email, customCategories }: ProfileViewPro
           </form>
         </CardContent>
       </Card>
+
+      <ChangePasswordSection email={email} />
+
+      <RecipePdfExportButton userName={profile.display_name || "Rezeptsammler"} />
 
       <CustomCategoriesSection categories={customCategories} />
 

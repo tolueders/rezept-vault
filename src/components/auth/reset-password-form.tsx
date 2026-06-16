@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -19,7 +19,9 @@ import { toast } from "sonner";
 
 export function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [ready, setReady] = useState(false);
   const {
     register,
@@ -32,20 +34,50 @@ export function ResetPasswordForm() {
   useEffect(() => {
     const supabase = createClient();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "PASSWORD_RECOVERY") {
+    async function initSession() {
+      const code = searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
           setReady(true);
+          setChecking(false);
+          return;
         }
       }
-    );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true);
+      const hash = window.location.hash.substring(1);
+      if (hash) {
+        const hashParams = new URLSearchParams(hash);
+        if (hashParams.get("type") === "recovery") {
+          setReady(true);
+          setChecking(false);
+          return;
+        }
+      }
+
+      const isRecoveryFlow = searchParams.get("recovery") === "1";
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session && isRecoveryFlow) {
+        setReady(true);
+      }
+
+      setChecking(false);
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setReady(true);
+        setChecking(false);
+      }
     });
 
-    return () => subscription.subscription.unsubscribe();
-  }, []);
+    initSession();
+    return () => subscription.unsubscribe();
+  }, [searchParams]);
 
   async function onSubmit(data: ResetPasswordFormValues) {
     setLoading(true);
@@ -61,8 +93,18 @@ export function ResetPasswordForm() {
     }
 
     toast.success("Passwort aktualisiert!");
-    router.push("/recipes");
+    router.push("/login");
     router.refresh();
+  }
+
+  if (checking) {
+    return (
+      <AuthShell title="Wird geladen…" description="Link wird geprüft.">
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </AuthShell>
+    );
   }
 
   if (!ready) {
