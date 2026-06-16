@@ -32,7 +32,7 @@ import { recipeSchema, type RecipeFormValues } from "@/lib/validations/auth";
 import { createRecipe, updateRecipe, createVariant } from "@/lib/actions/recipes";
 import { uploadRecipeImage } from "@/lib/actions/profile";
 import {
-  scanRecipePhoto,
+  scanRecipePhotos,
   scanRecipeText,
   scanRecipeUrl,
 } from "@/lib/resolve-scan.client";
@@ -91,9 +91,7 @@ export function RecipeForm({
   const [imagePreview, setImagePreview] = useState<string | null>(
     recipe?.image_url || null
   );
-  const [analysisPhotoPreview, setAnalysisPhotoPreview] = useState<string | null>(
-    null
-  );
+  const [photoAnalyzed, setPhotoAnalyzed] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [importTab, setImportTab] = useState<ImportMode>("manual");
   const scanMemoryRef = useRef(new Map<string, GeminiRecipeExtraction>());
@@ -264,17 +262,24 @@ export function RecipeForm({
     }
   }
 
-  async function handlePhotoAnalysis(file: File) {
+  async function handlePhotoAnalysis(files: File[]) {
     setAnalyzing(true);
     try {
-      const { data, fromCache, previewUrl } = await scanRecipePhoto(
-        file,
+      const { data, fromCache, previewUrls } = await scanRecipePhotos(
+        files,
         scanMemoryRef.current
       );
       applyExtraction(data);
-      setAnalysisPhotoPreview(previewUrl);
+      setPhotoAnalyzed(true);
+      if (previewUrls[0] && files[0]) {
+        setImageFile(files[0]);
+        setImagePreview(previewUrls[0]);
+      }
       toast.success(fromCache ? "Foto bereits analysiert" : "Rezept erkannt!", {
-        description: "Bitte prüfe und bearbeite die extrahierten Daten.",
+        description:
+          files.length > 1
+            ? `${files.length} Fotos ausgewertet — bitte prüfe die extrahierten Daten.`
+            : "Bitte prüfe und bearbeite die extrahierten Daten.",
       });
     } catch (err) {
       toast.error(
@@ -283,6 +288,10 @@ export function RecipeForm({
     } finally {
       setAnalyzing(false);
     }
+  }
+
+  function handlePhotoReset() {
+    setPhotoAnalyzed(false);
   }
 
   async function onSubmit(data: RecipeFormValues) {
@@ -352,8 +361,9 @@ export function RecipeForm({
           importUrl={importUrl}
           onImportUrlChange={setImportUrl}
           onUrlImport={handleUrlImport}
-          imagePreview={analysisPhotoPreview}
-          onPhotoSelect={handlePhotoAnalysis}
+          photoAnalyzed={photoAnalyzed}
+          onPhotoAnalyze={handlePhotoAnalysis}
+          onPhotoReset={handlePhotoReset}
         />
       )}
 

@@ -20,7 +20,7 @@ export async function resolveScan(
 
 async function fetchExtraction(
   endpoint: string,
-  body: Record<string, string>
+  body: Record<string, unknown>
 ): Promise<GeminiRecipeExtraction> {
   const res = await fetch(endpoint, {
     method: "POST",
@@ -58,20 +58,11 @@ export async function scanRecipePhoto(
   file: File,
   memory: Map<string, GeminiRecipeExtraction>
 ) {
-  const { compressImageForAnalysis } = await import("@/lib/image-utils");
-  const { hashFile } = await import("@/lib/content-hash.client");
-  const { MAX_ANALYZE_BASE64_LENGTH } = await import("@/lib/image-mime");
+  return scanRecipePhotos([file], memory);
+}
 
-  const prepared = await compressImageForAnalysis(file);
-  const hash = await hashFile(prepared);
-  const mimeType = prepared.type || "image/jpeg";
-
-  const cached = memory.get(hash) ?? getSessionScan<GeminiRecipeExtraction>(hash);
-  if (cached) {
-    memory.set(hash, cached);
-    return { data: cached, fromCache: true, previewUrl: URL.createObjectURL(prepared) };
-  }
-
+async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
+  const mimeType = file.type || "image/jpeg";
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -79,16 +70,57 @@ export async function scanRecipePhoto(
       resolve(result.split(",")[1]);
     };
     reader.onerror = reject;
-    reader.readAsDataURL(prepared);
+    reader.readAsDataURL(file);
   });
+  return { base64, mimeType };
+}
 
-  if (base64.length > MAX_ANALYZE_BASE64_LENGTH) {
-    throw new Error("Bild zu groß. Bitte ein kleineres Foto wählen.");
+export async function scanRecipePhotos(
+  files: File[],
+  memory: Map<string, GeminiRecipeExtraction>
+) {
+  if (files.length === 0) {
+    throw new Error("Kein Foto ausgewählt");
+  }
+
+  const { compressImageForAnalysis } = await import("@/lib/image-utils");
+  const { hashFile, hashString } = await import("@/lib/content-hash.client");
+  const { MAX_ANALYZE_BASE64_LENGTH } = await import("@/lib/image-mime");
+
+  const prepared = await Promise.all(files.map((file) => compressImageForAnalysis(file)));
+  const fileHashes = await Promise.all(prepared.map((file) => hashFile(file)));
+  const hash = await hashString(fileHashes.join(":"));
+
+  const cached = memory.get(hash) ?? getSessionScan<GeminiRecipeExtraction>(hash);
+  if (cached) {
+    memory.set(hash, cached);
+    return {
+      data: cached,
+      fromCache: true,
+      previewUrls: prepared.map((file) => URL.createObjectURL(file)),
+    };
+  }
+
+  const encoded = await Promise.all(prepared.map(fileToBase64));
+
+  for (const { base64 } of encoded) {
+    if (base64.length > MAX_ANALYZE_BASE64_LENGTH) {
+      throw new Error("Bild zu groß. Bitte ein kleineres Foto wählen.");
+    }
   }
 
   const { data, fromCache } = await resolveScan(hash, memory, () =>
-    fetchExtraction("/api/analyze-recipe", { image: base64, mimeType })
+    fetchExtraction("/api/analyze-recipe", {
+      images: encoded.map(({ base64, mimeType }) => ({
+        image: base64,
+        mimeType,
+      })),
+    })
   );
 
-  return { data, fromCache, previewUrl: URL.createObjectURL(prepared) };
+  return {
+    data,
+    fromCache,
+    previewUrls: prepared.map((file) => URL.createObjectURL(file)),
+  };
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import {
   Camera,
   FileText,
@@ -12,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RecipePhotoScanner } from "@/components/recipes/recipe-photo-scanner";
 import { cn } from "@/lib/utils";
 
 export type ImportMode = "manual" | "text" | "photo" | "url";
@@ -24,7 +24,7 @@ const IMPORT_MODES: {
 }[] = [
   { id: "manual", label: "Manuell", hint: "Selbst eintragen", icon: PenLine },
   { id: "text", label: "Text", hint: "Rezept einfügen", icon: FileText },
-  { id: "photo", label: "Foto", hint: "Foto scannen", icon: Camera },
+  { id: "photo", label: "Foto", hint: "Bis zu 3 Fotos", icon: Camera },
   { id: "url", label: "Link", hint: "Von Webseite", icon: Link2 },
 ];
 
@@ -38,8 +38,9 @@ interface RecipeImportPanelProps {
   importUrl: string;
   onImportUrlChange: (url: string) => void;
   onUrlImport: () => void;
-  imagePreview: string | null;
-  onPhotoSelect: (file: File) => void;
+  photoAnalyzed: boolean;
+  onPhotoAnalyze: (files: File[]) => void;
+  onPhotoReset: () => void;
 }
 
 export function RecipeImportPanel({
@@ -52,11 +53,10 @@ export function RecipeImportPanel({
   importUrl,
   onImportUrlChange,
   onUrlImport,
-  imagePreview,
-  onPhotoSelect,
+  photoAnalyzed,
+  onPhotoAnalyze,
+  onPhotoReset,
 }: RecipeImportPanelProps) {
-  const photoInputRef = useRef<HTMLInputElement>(null);
-
   return (
     <section className="recipe-import-panel overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
       <div className="border-b border-border/40 bg-gradient-to-br from-primary/[0.06] via-transparent to-secondary/30 px-4 py-4 md:px-6 md:py-5">
@@ -158,74 +158,12 @@ export function RecipeImportPanel({
         )}
 
         {mode === "photo" && (
-          <>
-            {imagePreview ? (
-              <div className="space-y-4">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imagePreview}
-                    alt="Rezeptfoto"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  KI-Daten wurden übernommen. Prüfe das Formular unten.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={analyzing}
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  Anderes Foto wählen
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center px-2 py-2 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                  <Camera className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="text-base font-semibold">Rezept fotografieren</h3>
-                <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                  Lade ein Foto hoch — Titel, Zutaten und Zubereitung werden
-                  automatisch übernommen.
-                </p>
-                <Button
-                  type="button"
-                  className="mt-5 w-full max-w-xs"
-                  disabled={analyzing}
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Wird analysiert…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Foto auswählen
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              disabled={analyzing}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onPhotoSelect(file);
-                e.target.value = "";
-              }}
-            />
-          </>
+          <RecipePhotoScanner
+            analyzing={analyzing}
+            analyzed={photoAnalyzed}
+            onAnalyze={onPhotoAnalyze}
+            onReset={onPhotoReset}
+          />
         )}
 
         {mode === "url" && (

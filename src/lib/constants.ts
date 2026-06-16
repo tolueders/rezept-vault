@@ -34,6 +34,9 @@ export const RECIPES_PER_PAGE = 12;
 
 export const MAX_RECIPE_TAGS = 3;
 
+/** Max. Fotos pro KI-Rezeptscan */
+export const MAX_RECIPE_SCAN_PHOTOS = 3;
+
 export const STORAGE_BUCKETS = {
   recipeImages: "recipe-images",
   avatars: "avatars",

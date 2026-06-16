@@ -1,16 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Cropper, { Area } from "react-easy-crop";
-import { Camera, ImagePlus, Loader2, X } from "lucide-react";
+import { useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { compressImage, getCroppedImage } from "@/lib/image-utils";
+import { ImageCropDialog } from "@/components/recipes/image-crop-dialog";
+import { compressImage } from "@/lib/image-utils";
 
 interface ImageUploaderProps {
   preview: string | null;
@@ -21,14 +15,6 @@ interface ImageUploaderProps {
 export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploaderProps) {
   const [cropOpen, setCropOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedArea, setCroppedArea] = useState<Area | null>(null);
-  const [processing, setProcessing] = useState(false);
-
-  const onCropComplete = useCallback((_: Area, croppedAreaPixels: Area) => {
-    setCroppedArea(croppedAreaPixels);
-  }, []);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -40,18 +26,13 @@ export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploader
     e.target.value = "";
   }
 
-  async function handleCropSave() {
-    if (!imageSrc || !croppedArea) return;
-    setProcessing(true);
-    try {
-      const blob = await getCroppedImage(imageSrc, croppedArea);
-      const file = new File([blob], "recipe.webp", { type: "image/webp" });
-      const previewUrl = URL.createObjectURL(blob);
-      onImageReady(file, previewUrl);
-      setCropOpen(false);
-    } finally {
-      setProcessing(false);
-    }
+  async function handleCropConfirm(blob: Blob) {
+    const file = new File([blob], "recipe.webp", { type: "image/webp" });
+    const previewUrl = URL.createObjectURL(blob);
+    onImageReady(file, previewUrl);
+    setCropOpen(false);
+    if (imageSrc) URL.revokeObjectURL(imageSrc);
+    setImageSrc(null);
   }
 
   return (
@@ -92,42 +73,19 @@ export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploader
         </label>
       )}
 
-      <Dialog open={cropOpen} onOpenChange={setCropOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Camera className="h-4 w-4" />
-              Bild zuschneiden
-            </DialogTitle>
-          </DialogHeader>
-          <div className="relative h-64">
-            {imageSrc && (
-              <Cropper
-                image={imageSrc}
-                crop={crop}
-                zoom={zoom}
-                aspect={16 / 9}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-              />
-            )}
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={3}
-            step={0.1}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full"
-          />
-          <Button onClick={handleCropSave} disabled={processing}>
-            {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Übernehmen
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <ImageCropDialog
+        open={cropOpen}
+        onOpenChange={(open) => {
+          setCropOpen(open);
+          if (!open && imageSrc) {
+            URL.revokeObjectURL(imageSrc);
+            setImageSrc(null);
+          }
+        }}
+        imageSrc={imageSrc}
+        aspect={16 / 9}
+        onConfirm={handleCropConfirm}
+      />
     </div>
   );
 }
