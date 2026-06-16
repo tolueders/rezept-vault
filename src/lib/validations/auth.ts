@@ -49,8 +49,8 @@ export const recipeSchema = z
   .object({
     title: z.string().min(2, "Titel muss mindestens 2 Zeichen haben"),
     description: z.string().optional(),
-    category_id: z.string().optional(),
-    custom_category_id: z.string().optional(),
+    category_id: z.string().optional().or(z.literal("")),
+    custom_category_id: z.string().optional().or(z.literal("")),
     servings: z.number().min(1, "Mindestens 1 Portion"),
     cook_time_minutes: z.number().min(0),
     difficulty: z.enum(["einfach", "mittel", "schwer"]),

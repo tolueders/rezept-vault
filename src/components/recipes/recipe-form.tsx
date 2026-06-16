@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -127,9 +127,41 @@ export function RecipeForm({
     remove: removeStep,
   } = useFieldArray({ control: form.control, name: "steps" });
 
-  const categoryValue = form.watch("custom_category_id")
-    ? `custom:${form.watch("custom_category_id")}`
-    : `std:${form.watch("category_id") || ""}`;
+  const categoryItems = useMemo(
+    () => [
+      ...categories.map((cat) => ({ value: `std:${cat.id}`, label: cat.name })),
+      ...customCategories.map((cat) => ({
+        value: `custom:${cat.id}`,
+        label: `${cat.name} (eigen)`,
+      })),
+    ],
+    [categories, customCategories]
+  );
+
+  const categoryId = form.watch("category_id");
+  const customCategoryId = form.watch("custom_category_id");
+  const categoryValue = customCategoryId
+    ? `custom:${customCategoryId}`
+    : categoryId || categories[0]?.id
+      ? `std:${categoryId || categories[0]?.id}`
+      : null;
+
+  useEffect(() => {
+    if (!categoryId && !customCategoryId && categories[0]?.id) {
+      form.setValue("category_id", categories[0].id, { shouldValidate: true });
+    }
+  }, [categories, categoryId, customCategoryId, form]);
+
+  function handleCategoryChange(v: string | null) {
+    if (!v) return;
+    if (v.startsWith("custom:")) {
+      form.setValue("custom_category_id", v.slice(7), { shouldValidate: true, shouldDirty: true });
+      form.setValue("category_id", "", { shouldValidate: true });
+    } else {
+      form.setValue("category_id", v.slice(4), { shouldValidate: true, shouldDirty: true });
+      form.setValue("custom_category_id", "", { shouldValidate: true });
+    }
+  }
 
   function applyExtraction(raw: Parameters<typeof normalizeRecipeExtraction>[0]) {
     const data = normalizeRecipeExtraction(raw);
@@ -480,18 +512,10 @@ export function RecipeForm({
             <Label>Kategorie</Label>
             <Select
               value={categoryValue}
-              onValueChange={(v) => {
-                if (!v) return;
-                if (v.startsWith("custom:")) {
-                  form.setValue("custom_category_id", v.replace("custom:", ""));
-                  form.setValue("category_id", undefined);
-                } else {
-                  form.setValue("category_id", v.replace("std:", ""));
-                  form.setValue("custom_category_id", undefined);
-                }
-              }}
+              onValueChange={handleCategoryChange}
+              items={categoryItems}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Kategorie wählen" />
               </SelectTrigger>
               <SelectContent>
@@ -500,15 +524,11 @@ export function RecipeForm({
                     {cat.name}
                   </SelectItem>
                 ))}
-                {customCategories.length > 0 && (
-                  <>
-                    {customCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={`custom:${cat.id}`}>
-                        {cat.name} (eigen)
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
+                {customCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={`custom:${cat.id}`}>
+                    {cat.name} (eigen)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {form.formState.errors.category_id && (
@@ -522,10 +542,10 @@ export function RecipeForm({
             <Select
               value={form.watch("difficulty")}
               onValueChange={(v) =>
-                v && form.setValue("difficulty", v as RecipeFormValues["difficulty"])
+                v && form.setValue("difficulty", v as RecipeFormValues["difficulty"], { shouldValidate: true })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
