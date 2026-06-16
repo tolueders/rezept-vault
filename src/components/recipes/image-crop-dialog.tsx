@@ -54,14 +54,14 @@ export function ImageCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg gap-3 sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
             {title}
           </DialogTitle>
         </DialogHeader>
-        <div className="relative h-64">
+        <div className="relative h-64 overflow-hidden rounded-lg bg-muted">
           {imageSrc && (
             <Cropper
               image={imageSrc}

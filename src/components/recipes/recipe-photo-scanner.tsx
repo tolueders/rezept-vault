@@ -20,6 +20,28 @@ interface RecipePhotoScannerProps {
   onReset: () => void;
 }
 
+function PhotoGrid({ photos }: { photos: ScanPhoto[] }) {
+  if (photos.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {photos.map((photo, index) => (
+        <div
+          key={photo.id}
+          className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo.previewUrl}
+            alt={`Rezeptfoto ${index + 1}`}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RecipePhotoScanner({
   analyzing,
   analyzed,
@@ -30,6 +52,8 @@ export function RecipePhotoScanner({
   const [photos, setPhotos] = useState<ScanPhoto[]>([]);
   const [cropOpen, setCropOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+
+  const canAddMore = photos.length < MAX_RECIPE_SCAN_PHOTOS;
 
   function removePhoto(id: string) {
     setPhotos((prev) => {
@@ -72,26 +96,10 @@ export function RecipePhotoScanner({
     setImageSrc(null);
   }
 
-  const canAddMore = photos.length < MAX_RECIPE_SCAN_PHOTOS;
-
   if (analyzed && photos.length > 0) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-2">
-          {photos.map((photo, index) => (
-            <div
-              key={photo.id}
-              className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photo.previewUrl}
-                alt={`Rezeptfoto ${index + 1}`}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
+        <PhotoGrid photos={photos} />
         <p className="text-center text-sm text-muted-foreground">
           KI-Daten wurden übernommen. Prüfe das Formular unten.
         </p>
@@ -111,7 +119,7 @@ export function RecipePhotoScanner({
   return (
     <div className="space-y-4">
       {photos.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {photos.map((photo, index) => (
             <div
               key={photo.id}
@@ -135,19 +143,6 @@ export function RecipePhotoScanner({
               </Button>
             </div>
           ))}
-          {canAddMore &&
-            Array.from({ length: MAX_RECIPE_SCAN_PHOTOS - photos.length }).map((_, i) => (
-              <button
-                key={`empty-${i}`}
-                type="button"
-                disabled={analyzing}
-                onClick={() => photoInputRef.current?.click()}
-                className="flex aspect-[4/3] flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border/60 bg-secondary/20 text-muted-foreground transition-colors hover:border-primary/30 hover:bg-secondary/40 disabled:opacity-50"
-              >
-                <Plus className="h-5 w-5" />
-                <span className="text-[10px]">Foto {photos.length + i + 1}</span>
-              </button>
-            ))}
         </div>
       ) : (
         <div className="flex flex-col items-center px-2 py-2 text-center">
@@ -201,7 +196,9 @@ export function RecipePhotoScanner({
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {photos.length === 1 ? "Rezept analysieren" : `${photos.length} Fotos analysieren`}
+                  {photos.length === 1
+                    ? "Rezept analysieren"
+                    : `${photos.length} Fotos analysieren`}
                 </>
               )}
             </Button>

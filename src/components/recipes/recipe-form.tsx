@@ -96,7 +96,8 @@ export function RecipeForm({
   const [importTab, setImportTab] = useState<ImportMode>("manual");
   const scanMemoryRef = useRef(new Map<string, GeminiRecipeExtraction>());
 
-  const showHeroUploader = mode !== "create" || importTab !== "photo";
+  const showHeroUploader =
+    mode !== "create" || importTab !== "photo" || photoAnalyzed;
 
   const defaultValues: RecipeFormValues = {
     title: recipe?.title || "",
