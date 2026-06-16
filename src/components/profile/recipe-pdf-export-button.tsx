@@ -34,17 +34,16 @@ export function RecipePdfExportButton({ userName }: RecipePdfExportButtonProps) 
 
   return (
     <Card className="border-border/50 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2">
           <FileDown className="h-4 w-4 text-primary" />
           PDF-Backup
         </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-4 text-sm text-muted-foreground">
-          Alle deine Rezepte als schön gestaltete PDF herunterladen — ohne Fotos, ideal
-          zum Ausdrucken oder Archivieren.
+        <p className="text-sm text-muted-foreground">
+          Alle Rezepte als PDF — ideal zum Ausdrucken oder Archivieren.
         </p>
+      </CardHeader>
+      <CardContent className="pt-0">
         <Button
           type="button"
           variant="outline"

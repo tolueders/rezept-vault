@@ -58,11 +58,10 @@ export function CustomCategoriesSection({
 
   return (
     <Card className="border-border/50 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Eigene Kategorien</CardTitle>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Erstelle persönliche Kategorien für deine Rezepte, z. B. „Omas Rezepte“
-          oder „Schnell & einfach“.
+      <CardHeader className="pb-2">
+        <CardTitle>Eigene Kategorien</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Persönliche Kategorien für deine Rezepte, z. B. „Omas Rezepte“.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
