@@ -16,6 +16,7 @@ import { RecipeCard } from "@/components/recipes/recipe-card";
 import { searchRecipesAction } from "@/lib/actions/recipes";
 import type { CustomCategory, RecipeCategory } from "@/types/database";
 import { cn } from "@/lib/utils";
+import { ScrollToTopButton } from "@/components/layout/scroll-to-top-button";
 
 type RecipeItem = Parameters<typeof RecipeCard>[0]["recipe"];
 
@@ -96,7 +97,29 @@ export function RecipesHomeView({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <header className="page-header">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="page-title">Meine Rezepte</h1>
+            {stats && (
+              <>
+                <p className="page-eyebrow mt-4">Willkommen zurück</p>
+                <p className="page-greeting truncate">Hallo, {stats.displayName}!</p>
+              </>
+            )}
+          </div>
+          <span className="mt-1 shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+            {loading ? "…" : results.length}
+            {!loading && (
+              <span className="ml-0.5 font-normal text-primary/70">
+                {results.length === 1 ? "Treffer" : "Treffer"}
+              </span>
+            )}
+          </span>
+        </div>
+      </header>
+
       {/* Sticky Filter-Block */}
       <section
         className={cn(
@@ -105,31 +128,9 @@ export function RecipesHomeView({
           "md:surface-card md:static md:mx-0 md:top-auto md:overflow-hidden md:rounded-2xl md:border md:border-border/50 md:bg-card/95"
         )}
       >
-        {/* Begrüßung */}
-        {stats && (
-          <div className="flex items-start justify-between gap-4 px-4 pb-4 pt-0 md:px-6 md:pt-6">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70">
-                Willkommen zurück
-              </p>
-              <h1 className="page-title mt-1 truncate">
-                Hallo, {stats.displayName}!
-              </h1>
-            </div>
-            <span className="mt-1 shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-              {loading ? "…" : results.length}
-              {!loading && (
-                <span className="ml-0.5 font-normal text-primary/70">
-                  {results.length === 1 ? "Treffer" : "Treffer"}
-                </span>
-              )}
-            </span>
-          </div>
-        )}
-
         {/* Schnellzugriff – kompaktes Grid, kein zweites Filterband */}
         {quickLinks.length > 0 && (
-          <div className="grid grid-cols-4 gap-2 border-t border-border/40 px-4 py-4 md:px-6">
+          <div className="grid grid-cols-4 gap-2 px-4 py-4 md:px-6">
             {quickLinks.map((link) => (
               <Link
                 key={link.href}
@@ -147,7 +148,12 @@ export function RecipesHomeView({
         )}
 
         {/* Suche */}
-        <div className="border-t border-border/40 px-4 py-4 md:px-6">
+        <div
+          className={cn(
+            "px-4 py-4 md:px-6",
+            quickLinks.length > 0 && "border-t border-border/40"
+          )}
+        >
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -226,6 +232,7 @@ export function RecipesHomeView({
           ))}
         </div>
       )}
+      <ScrollToTopButton />
     </div>
   );
 }

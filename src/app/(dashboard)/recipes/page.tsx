@@ -40,10 +40,10 @@ export default async function RecipesPage({
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <header className="page-header flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Meine Rezepte</h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="page-title">Meine Rezepte</h1>
+          <p className="page-subtitle">
             {total} {total === 1 ? "Rezept" : "Rezepte"} in deiner Sammlung
           </p>
         </div>
@@ -53,7 +53,7 @@ export default async function RecipesPage({
             Neues Rezept
           </Link>
         </Button>
-      </div>
+      </header>
 
       <RecipeSearch categories={categories} initialRecipes={recipes} />
 

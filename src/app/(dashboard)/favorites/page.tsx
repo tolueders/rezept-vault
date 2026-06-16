@@ -9,10 +9,10 @@ export default async function FavoritesPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Favoriten</h1>
-      <p className="mb-8 text-muted-foreground">
-        Deine Lieblingsrezepte auf einen Blick
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">Favoriten</h1>
+        <p className="page-subtitle">Deine Lieblingsrezepte auf einen Blick</p>
+      </header>
 
       {recipes.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-center">

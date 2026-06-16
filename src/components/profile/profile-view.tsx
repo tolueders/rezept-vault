@@ -96,7 +96,9 @@ export function ProfileView({ profile, email, customCategories }: ProfileViewPro
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-2">
-      <h1 className="page-title">Profil</h1>
+      <header className="page-header !mb-0">
+        <h1 className="page-title">Profil</h1>
+      </header>
 
       <Card className="border-border/50 shadow-sm">
         <CardContent className="space-y-4 pt-5">

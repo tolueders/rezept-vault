@@ -22,13 +22,13 @@ export default async function DiscoverPage({
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold sm:text-3xl">Entdecken</h1>
-        <p className="mt-1 text-muted-foreground">
+      <header className="page-header">
+        <h1 className="page-title">Entdecken</h1>
+        <p className="page-subtitle">
           Öffentliche Rezepte von anderen Nutzern – {total}{" "}
           {total === 1 ? "Rezept" : "Rezepte"} verfügbar
         </p>
-      </div>
+      </header>
 
       <DiscoverSearch categories={categories} initialRecipes={recipes} />
 
