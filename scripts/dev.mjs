@@ -4,20 +4,54 @@
  * Verhindert 500-Fehler durch parallele build/dev-Läufe.
  */
 import { spawn, execSync } from "child_process";
-import { rmSync } from "fs";
+import { existsSync, rmSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const nextDir = resolve(root, ".next");
 
+function killDevServers() {
+  try {
+    execSync("pkill -f 'next dev' 2>/dev/null || true", { stdio: "ignore" });
+  } catch {
+    // ignore
+  }
+}
+
+function clearNextCache() {
+  if (!existsSync(nextDir)) return true;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      rmSync(nextDir, { recursive: true, force: true });
+      return true;
+    } catch {
+      killDevServers();
+      try {
+        execSync("sleep 1", { stdio: "ignore" });
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  console.warn("⚠️  .next konnte nicht gelöscht werden – starte trotzdem …");
+  return false;
+}
+
+killDevServers();
 try {
-  execSync("pkill -f 'next dev' 2>/dev/null || true", { stdio: "ignore" });
+  execSync("sleep 1", { stdio: "ignore" });
 } catch {
   // ignore
 }
 
-rmSync(resolve(root, ".next"), { recursive: true, force: true });
-console.log("🧹 .next Cache geleert – starte Dev-Server…\n");
+if (clearNextCache()) {
+  console.log("🧹 .next Cache geleert – starte Dev-Server…\n");
+} else {
+  console.log("▶️  Starte Dev-Server…\n");
+}
 
 const child = spawn("npx", ["next", "dev"], {
   cwd: root,
