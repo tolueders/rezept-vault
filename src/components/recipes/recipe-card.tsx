@@ -42,6 +42,15 @@ function RecipeCardMeta({
       </span>
       <span className="px-1.5 text-border/80">·</span>
       <span className="whitespace-nowrap">{DIFFICULTY_LABELS[recipe.difficulty]}</span>
+      <span className="px-1.5 text-border/80">·</span>
+      <span
+        className={cn(
+          "whitespace-nowrap text-[10px] sm:text-[11px]",
+          recipe.is_public ? "text-muted-foreground/60" : "text-muted-foreground/80"
+        )}
+      >
+        {recipe.is_public ? "Öffentlich" : "Privat"}
+      </span>
       {recipe.rating_count > 0 && (
         <>
           <span className="px-1.5 text-border/80">·</span>

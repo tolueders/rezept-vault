@@ -30,9 +30,11 @@ import {
   rateRecipe,
   deleteRecipe,
   copyRecipeToCollection,
-  publishRecipe,
+  updateRecipeVisibility,
 } from "@/lib/actions/recipes";
 import { DIFFICULTY_LABELS } from "@/lib/constants";
+import { UNCHANGED_COPY_PUBLISH_MESSAGE } from "@/lib/recipe-copy-utils";
+import { RecipeVisibilityToggle } from "@/components/recipes/recipe-visibility-toggle";
 import { shareOrCopy } from "@/lib/share-utils";
 import type { RecipeWithDetails } from "@/types/database";
 import { cn } from "@/lib/utils";
@@ -66,7 +68,7 @@ export function RecipeDetail({
   const [copying, setCopying] = useState(false);
   const [publicLinkCopied, setPublicLinkCopied] = useState(false);
   const [isPublic, setIsPublic] = useState(recipe.is_public);
-  const [publishing, setPublishing] = useState(false);
+  const [updatingVisibility, setUpdatingVisibility] = useState(false);
 
   const cookHref = isPublicView
     ? `/recipe/${recipe.slug}/cook`
@@ -137,17 +139,18 @@ export function RecipeDetail({
     }
   }
 
-  async function handlePublish() {
-    setPublishing(true);
+  async function handleVisibilityChange(nextPublic: boolean) {
+    if (nextPublic && publicPublishBlockedReason) return;
+    setUpdatingVisibility(true);
     try {
-      await publishRecipe(recipe.id);
-      setIsPublic(true);
-      toast.success("Rezept veröffentlicht");
+      await updateRecipeVisibility(recipe.id, nextPublic);
+      setIsPublic(nextPublic);
+      toast.success(nextPublic ? "Rezept ist öffentlich" : "Rezept ist privat");
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Veröffentlichen");
+      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
     } finally {
-      setPublishing(false);
+      setUpdatingVisibility(false);
     }
   }
 
@@ -208,6 +211,19 @@ export function RecipeDetail({
               {recipe.cook_time_minutes} Min.
             </span>
             <span>{DIFFICULTY_LABELS[recipe.difficulty]}</span>
+            {!isPublicView && isOwner && (
+              <>
+                <span className="text-border/60">·</span>
+                <span
+                  className={cn(
+                    "text-xs",
+                    isPublic ? "text-muted-foreground/70" : "text-muted-foreground"
+                  )}
+                >
+                  {isPublic ? "Öffentlich" : "Privat"}
+                </span>
+              </>
+            )}
             {recipe.author && (
               <span>von {recipe.author.display_name}</span>
             )}
@@ -265,6 +281,18 @@ export function RecipeDetail({
           </Button>
         </div>
       </div>
+
+      {!isPublicView && isOwner && (
+        <div className="mb-4">
+          <RecipeVisibilityToggle
+            value={isPublic}
+            onChange={handleVisibilityChange}
+            publicDisabled={!!publicPublishBlockedReason}
+            publicDisabledHint={publicPublishBlockedReason ?? UNCHANGED_COPY_PUBLISH_MESSAGE}
+            className={cn(updatingVisibility && "pointer-events-none opacity-60")}
+          />
+        </div>
+      )}
 
       {currentUserId && !isPublicView && (
         <Button
@@ -379,41 +407,6 @@ export function RecipeDetail({
       />
 
       <div className="mt-8 space-y-4 mb-2">
-        {!isPublicView && isOwner && !isPublic && (
-          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm sm:p-5">
-            {publicPublishBlockedReason ? (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  {publicPublishBlockedReason}
-                </p>
-                <Button className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]" asChild>
-                  <Link href={`/recipes/${recipe.id}/edit`}>Rezept bearbeiten</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Teilen ist erst möglich, wenn das Rezept öffentlich ist.
-                </p>
-                <Button
-                  className="mt-4 h-10 w-full rounded-xl sm:w-auto sm:min-w-[240px]"
-                  onClick={handlePublish}
-                  disabled={publishing}
-                >
-                  {publishing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Wird veröffentlicht…
-                    </>
-                  ) : (
-                    "Veröffentlichen"
-                  )}
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
         {isPublic && isOwner && !isPublicView && (
           <div className="flex gap-2">
             <Button

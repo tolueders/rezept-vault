@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { RecipeVisibilityToggle } from "@/components/recipes/recipe-visibility-toggle";
 import {
   Select,
   SelectContent,
@@ -37,12 +36,6 @@ import {
   scanRecipeUrl,
 } from "@/lib/resolve-scan.client";
 import { normalizeRecipeExtraction } from "@/lib/recipe-extraction-utils";
-import {
-  formValuesToSnapshot,
-  recipeWithDetailsToSnapshot,
-  snapshotsEqual,
-  UNCHANGED_COPY_PUBLISH_MESSAGE,
-} from "@/lib/recipe-copy-utils";
 import { DIFFICULTY_LABELS, MAX_RECIPE_TAGS } from "@/lib/constants";
 import type {
   GeminiRecipeExtraction,
@@ -114,7 +107,7 @@ export function RecipeForm({
     servings: recipe?.servings || 4,
     cook_time_minutes: recipe?.cook_time_minutes || 30,
     difficulty: recipe?.difficulty || "mittel",
-    is_public: recipe?.is_public || false,
+    is_public: recipe?.is_public ?? true,
     tags: recipe?.tags?.map((t) => t.tag).slice(0, MAX_RECIPE_TAGS) || [],
     ingredients: recipe?.ingredients?.length
       ? recipe.ingredients.map((i) => ({
@@ -156,13 +149,6 @@ export function RecipeForm({
 
   const categoryId = form.watch("category_id");
   const customCategoryId = form.watch("custom_category_id");
-  const watchedForm = form.watch();
-  const publishBlocked =
-    !!recipe?.parent_recipe_id &&
-    snapshotsEqual(
-      formValuesToSnapshot(watchedForm, imagePreview),
-      recipeWithDetailsToSnapshot(recipe)
-    );
   const categoryValue = customCategoryId
     ? `custom:${customCategoryId}`
     : categoryId || defaultStandardCategoryId
@@ -204,7 +190,7 @@ export function RecipeForm({
       servings: data.servings,
       cook_time_minutes: data.cook_time_minutes,
       difficulty: data.difficulty,
-      is_public: false,
+      is_public: true,
       tags: [],
       ingredients: data.ingredients,
       steps: data.steps,
@@ -404,19 +390,6 @@ export function RecipeForm({
 
       <section className="form-section space-y-4">
         <h2 className="form-section-title">Grunddaten</h2>
-
-        <div className="space-y-2">
-          <Label>Sichtbarkeit</Label>
-          <RecipeVisibilityToggle
-            value={form.watch("is_public")}
-            onChange={(isPublic) => {
-              if (isPublic && publishBlocked) return;
-              form.setValue("is_public", isPublic);
-            }}
-            publicDisabled={publishBlocked}
-            publicDisabledHint={UNCHANGED_COPY_PUBLISH_MESSAGE}
-          />
-        </div>
 
         <div className="space-y-2">
           <Label htmlFor="title">Titel</Label>

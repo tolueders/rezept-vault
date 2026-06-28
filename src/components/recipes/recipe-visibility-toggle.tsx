@@ -8,6 +8,7 @@ interface RecipeVisibilityToggleProps {
   onChange: (isPublic: boolean) => void;
   publicDisabled?: boolean;
   publicDisabledHint?: string;
+  className?: string;
 }
 
 export function RecipeVisibilityToggle({
@@ -15,9 +16,10 @@ export function RecipeVisibilityToggle({
   onChange,
   publicDisabled = false,
   publicDisabledHint,
+  className,
 }: RecipeVisibilityToggleProps) {
   return (
-    <div className="flex w-full flex-col gap-1.5 sm:max-w-xs">
+    <div className={cn("flex w-full flex-col gap-1.5", className)}>
       <div className="flex rounded-xl border border-border/50 bg-secondary/30 p-1">
         <button
           type="button"

@@ -229,17 +229,23 @@ export async function deleteRecipe(id: string) {
 }
 
 export async function publishRecipe(id: string) {
+  return updateRecipeVisibility(id, true);
+}
+
+export async function updateRecipeVisibility(id: string, isPublic: boolean) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
 
-  await assertRecipeCanBePublished(id, user.id);
+  if (isPublic) {
+    await assertRecipeCanBePublished(id, user.id);
+  }
 
   const { data: recipe, error } = await supabase
     .from("recipes")
-    .update({ is_public: true })
+    .update({ is_public: isPublic })
     .eq("id", id)
     .eq("user_id", user.id)
     .select("slug")
@@ -476,7 +482,7 @@ export async function createVariant(
       servings: recipeData.servings,
       cook_time_minutes: recipeData.cook_time_minutes,
       difficulty: recipeData.difficulty,
-      is_public: false,
+      is_public: recipeData.is_public,
       original_recipe_id: originalRecipeId,
       is_variant: true,
     })
