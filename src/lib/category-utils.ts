@@ -57,6 +57,25 @@ export function buildUserCategoryViews(
   return result.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "de"));
 }
 
+export function buildDiscoverCategoryViews(
+  standard: RecipeCategory[],
+  custom: { id: string; name: string; slug: string; authorName?: string }[],
+  recipeCounts: {
+    byStandard: Record<string, number>;
+    byCustom: Record<string, number>;
+  }
+): UserCategoryView[] {
+  const formattedCustom = custom.map((cat) => ({
+    id: cat.id,
+    name: cat.authorName ? `${cat.name} · ${cat.authorName}` : cat.name,
+    slug: cat.slug,
+  }));
+
+  return buildUserCategoryViews(standard, [], formattedCustom, recipeCounts).map(
+    (cat) => (cat.isCustom ? { ...cat, canDelete: false } : cat)
+  );
+}
+
 export function userCategoriesToFilterCategories(categories: UserCategoryView[]) {
   return categories.map((cat) => ({
     id: cat.filterKey,
