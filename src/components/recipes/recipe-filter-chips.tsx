@@ -15,6 +15,16 @@ export function buildCategoryFilters(categories: UserCategoryView[]) {
   ];
 }
 
+export function toggleCategoryFilterSelection(
+  selected: string[],
+  filterKey: string
+): string[] {
+  if (filterKey === "all") return [];
+  return selected.includes(filterKey)
+    ? selected.filter((filter) => filter !== filterKey)
+    : [...selected, filterKey];
+}
+
 export function RecipeFilterChip({
   children,
   active,

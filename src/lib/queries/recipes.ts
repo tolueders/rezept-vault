@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { applyUserCategoryDisplayNames } from "@/lib/category-utils";
 import { getUserCategories } from "@/lib/queries/categories";
+import {
+  applyCategoryFiltersToQuery,
+  filterByCategoryFilters,
+} from "@/lib/recipe-filter-utils";
 import type { Recipe, RecipeWithDetails } from "@/types/database";
 import { RECIPES_PER_PAGE } from "@/lib/constants";
 
@@ -165,7 +169,7 @@ export async function getUserRecipes(
   };
 }
 
-export async function searchRecipes(query: string, categoryFilter?: string) {
+export async function searchRecipes(query: string, categoryFilters?: string[]) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -173,36 +177,6 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
   if (!user) return [];
 
   const userCategories = await getUserCategories();
-
-  function applyCategoryFilter<T extends { category_id: string | null; custom_category_id: string | null }>(
-    items: T[]
-  ): T[] {
-    if (!categoryFilter || categoryFilter === "all") return items;
-    if (categoryFilter.startsWith("custom:")) {
-      const id = categoryFilter.slice(7);
-      return items.filter((r) => r.custom_category_id === id);
-    }
-    if (categoryFilter.startsWith("std:")) {
-      const id = categoryFilter.slice(4);
-      return items.filter((r) => r.category_id === id);
-    }
-    return items.filter((r) => r.category_id === categoryFilter);
-  }
-
-  function applyCategoryToQuery(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    q: any
-  ) {
-    if (!categoryFilter || categoryFilter === "all") return q;
-    if (categoryFilter.startsWith("custom:")) {
-      return q.eq("custom_category_id", categoryFilter.slice(7));
-    }
-    if (categoryFilter.startsWith("std:")) {
-      return q.eq("category_id", categoryFilter.slice(4));
-    }
-    return q.eq("category_id", categoryFilter);
-  }
-
   const trimmed = query.trim();
 
   if (!trimmed) {
@@ -212,9 +186,12 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
-    q = applyCategoryToQuery(q);
+    q = applyCategoryFiltersToQuery(q, categoryFilters ?? []);
     const { data } = await q;
-    return applyUserCategoryDisplayNames(applyCategoryFilter(data || []), userCategories);
+    return applyUserCategoryDisplayNames(
+      filterByCategoryFilters(data || [], categoryFilters ?? []),
+      userCategories
+    );
   }
 
   const { data: recipes } = await supabase
@@ -252,10 +229,16 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
   const combined = [...(recipes || []), ...extraRecipes];
   const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
 
-  return applyUserCategoryDisplayNames(applyCategoryFilter(unique), userCategories);
+  return applyUserCategoryDisplayNames(
+    filterByCategoryFilters(unique, categoryFilters ?? []),
+    userCategories
+  );
 }
 
-export async function searchFavoriteRecipes(query: string, categoryFilter?: string) {
+export async function searchFavoriteRecipes(
+  query: string,
+  categoryFilters?: string[]
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -277,35 +260,6 @@ export async function searchFavoriteRecipes(query: string, categoryFilter?: stri
     favRows?.map((row, index) => [row.recipe_id, index]) ?? []
   );
 
-  function applyCategoryFilter<
-    T extends { category_id: string | null; custom_category_id: string | null },
-  >(items: T[]): T[] {
-    if (!categoryFilter || categoryFilter === "all") return items;
-    if (categoryFilter.startsWith("custom:")) {
-      const id = categoryFilter.slice(7);
-      return items.filter((r) => r.custom_category_id === id);
-    }
-    if (categoryFilter.startsWith("std:")) {
-      const id = categoryFilter.slice(4);
-      return items.filter((r) => r.category_id === id);
-    }
-    return items.filter((r) => r.category_id === categoryFilter);
-  }
-
-  function applyCategoryToQuery(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    q: any
-  ) {
-    if (!categoryFilter || categoryFilter === "all") return q;
-    if (categoryFilter.startsWith("custom:")) {
-      return q.eq("custom_category_id", categoryFilter.slice(7));
-    }
-    if (categoryFilter.startsWith("std:")) {
-      return q.eq("category_id", categoryFilter.slice(4));
-    }
-    return q.eq("category_id", categoryFilter);
-  }
-
   const selectFields =
     "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*)";
 
@@ -314,7 +268,7 @@ export async function searchFavoriteRecipes(query: string, categoryFilter?: stri
 
   if (!trimmed) {
     let q = supabase.from("recipes").select(selectFields).in("id", favoriteIds);
-    q = applyCategoryToQuery(q);
+    q = applyCategoryFiltersToQuery(q, categoryFilters ?? []);
     const { data } = await q;
     results = data || [];
   } else {
@@ -353,11 +307,11 @@ export async function searchFavoriteRecipes(query: string, categoryFilter?: stri
 
     const combined = [...(recipes || []), ...extraRecipes];
     const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
-    results = applyCategoryFilter(unique);
+    results = filterByCategoryFilters(unique, categoryFilters ?? []);
   }
 
   if (!trimmed) {
-    results = applyCategoryFilter(results);
+    results = filterByCategoryFilters(results, categoryFilters ?? []);
   }
 
   results.sort(
@@ -397,38 +351,12 @@ export async function getPublicRecipes(
   return { recipes: data || [], total: count || 0 };
 }
 
-export async function searchPublicRecipes(query: string, categoryFilter?: string) {
+export async function searchPublicRecipes(
+  query: string,
+  categoryFilters?: string[]
+) {
   const supabase = await createClient();
   const trimmed = query.trim();
-
-  function applyCategoryFilter<
-    T extends { category_id: string | null; custom_category_id: string | null },
-  >(items: T[]): T[] {
-    if (!categoryFilter || categoryFilter === "all") return items;
-    if (categoryFilter.startsWith("custom:")) {
-      const id = categoryFilter.slice(7);
-      return items.filter((r) => r.custom_category_id === id);
-    }
-    if (categoryFilter.startsWith("std:")) {
-      const id = categoryFilter.slice(4);
-      return items.filter((r) => r.category_id === id);
-    }
-    return items.filter((r) => r.category_id === categoryFilter);
-  }
-
-  function applyCategoryToQuery(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    q: any
-  ) {
-    if (!categoryFilter || categoryFilter === "all") return q;
-    if (categoryFilter.startsWith("custom:")) {
-      return q.eq("custom_category_id", categoryFilter.slice(7));
-    }
-    if (categoryFilter.startsWith("std:")) {
-      return q.eq("category_id", categoryFilter.slice(4));
-    }
-    return q.eq("category_id", categoryFilter);
-  }
 
   const selectFields =
     "*, category:recipe_categories(*), custom_category:custom_categories(*), tags:recipe_tags(*), author:profiles!recipes_user_id_fkey(display_name)";
@@ -440,9 +368,9 @@ export async function searchPublicRecipes(query: string, categoryFilter?: string
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
-    q = applyCategoryToQuery(q);
+    q = applyCategoryFiltersToQuery(q, categoryFilters ?? []);
     const { data } = await q;
-    return data || [];
+    return filterByCategoryFilters(data || [], categoryFilters ?? []);
   }
 
   const { data: recipes } = await supabase
@@ -480,7 +408,7 @@ export async function searchPublicRecipes(query: string, categoryFilter?: string
   const combined = [...(recipes || []), ...extraRecipes];
   const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
 
-  return applyCategoryFilter(unique);
+  return filterByCategoryFilters(unique, categoryFilters ?? []);
 }
 
 export async function getCategories() {

@@ -524,25 +524,28 @@ export async function createVariant(
   return variant;
 }
 
-export async function searchRecipesAction(query: string, categoryId?: string) {
+export async function searchRecipesAction(
+  query: string,
+  categoryFilters?: string[]
+) {
   const { searchRecipes } = await import("@/lib/queries/recipes");
-  return searchRecipes(query, categoryId);
+  return searchRecipes(query, categoryFilters);
 }
 
 export async function searchFavoriteRecipesAction(
   query: string,
-  categoryId?: string
+  categoryFilters?: string[]
 ) {
   const { searchFavoriteRecipes } = await import("@/lib/queries/recipes");
-  return searchFavoriteRecipes(query, categoryId);
+  return searchFavoriteRecipes(query, categoryFilters);
 }
 
 export async function searchPublicRecipesAction(
   query: string,
-  categoryId?: string
+  categoryFilters?: string[]
 ) {
   const { searchPublicRecipes } = await import("@/lib/queries/recipes");
-  return searchPublicRecipes(query, categoryId);
+  return searchPublicRecipes(query, categoryFilters);
 }
 
 export async function setPreferredVariant(variantId: string, originalId: string) {

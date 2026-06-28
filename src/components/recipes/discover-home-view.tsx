@@ -22,18 +22,18 @@ export function DiscoverHomeView({
   totalCount,
 }: DiscoverHomeViewProps) {
   const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [results, setResults] = useState(initialRecipes);
   const [loading, setLoading] = useState(false);
 
-  const hasActiveFilter = query.length > 0 || categoryFilter !== "all";
+  const hasActiveFilter = query.length > 0 || categoryFilters.length > 0;
 
-  const doSearch = useCallback(async (q: string, cat: string) => {
+  const doSearch = useCallback(async (q: string, filters: string[]) => {
     setLoading(true);
     try {
       const data = await searchPublicRecipesAction(
         q,
-        cat === "all" ? undefined : cat
+        filters.length > 0 ? filters : undefined
       );
       setResults(data);
     } finally {
@@ -43,14 +43,14 @@ export function DiscoverHomeView({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      doSearch(query, categoryFilter);
+      doSearch(query, categoryFilters);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, categoryFilter, doSearch]);
+  }, [query, categoryFilters, doSearch]);
 
   function clearFilters() {
     setQuery("");
-    setCategoryFilter("all");
+    setCategoryFilters([]);
   }
 
   return (
@@ -77,8 +77,8 @@ export function DiscoverHomeView({
       <RecipeSearchFilters
         query={query}
         onQueryChange={setQuery}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
+        categoryFilters={categoryFilters}
+        onCategoryFiltersChange={setCategoryFilters}
         categories={categories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}
@@ -100,7 +100,7 @@ export function DiscoverHomeView({
           </p>
           <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {hasActiveFilter
-              ? "Probiere andere Suchbegriffe oder wähle „Alle“ in den Kategorien."
+              ? "Probiere andere Suchbegriffe oder passe die Kategorien an."
               : totalCount === 0
                 ? "Markiere ein Rezept als „Öffentlich“, damit es hier erscheint."
                 : "Es wurden keine passenden Rezepte gefunden."}

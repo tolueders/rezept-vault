@@ -194,6 +194,6 @@ export interface GeminiRecipeExtraction {
 
 export interface SearchFilters {
   query: string;
-  category?: string;
+  categories?: string[];
   tags?: string[];
 }
