@@ -5,10 +5,10 @@ import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters"
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { searchRecipesAction } from "@/lib/actions/recipes";
-import type { RecipeCategory } from "@/types/database";
+import type { UserCategoryView } from "@/types/database";
 
 interface RecipeSearchProps {
-  categories: RecipeCategory[];
+  categories: UserCategoryView[];
   initialRecipes?: Parameters<typeof RecipeCard>[0]["recipe"][];
 }
 

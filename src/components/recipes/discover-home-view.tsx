@@ -6,13 +6,13 @@ import { PublicRecipeCard } from "@/components/recipes/public-recipe-card";
 import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters";
 import { ScrollToTopButton } from "@/components/layout/scroll-to-top-button";
 import { searchPublicRecipesAction } from "@/lib/actions/recipes";
-import type { RecipeCategory } from "@/types/database";
+import type { UserCategoryView } from "@/types/database";
 
 type PublicRecipeItem = Parameters<typeof PublicRecipeCard>[0]["recipe"];
 
 interface DiscoverHomeViewProps {
   initialRecipes: PublicRecipeItem[];
-  categories: RecipeCategory[];
+  categories: UserCategoryView[];
   totalCount: number;
 }
 

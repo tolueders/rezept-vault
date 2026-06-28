@@ -45,10 +45,9 @@ import {
 } from "@/lib/recipe-copy-utils";
 import { DIFFICULTY_LABELS, MAX_RECIPE_TAGS } from "@/lib/constants";
 import type {
-  CustomCategory,
   GeminiRecipeExtraction,
-  RecipeCategory,
   RecipeWithDetails,
+  UserCategoryView,
 } from "@/types/database";
 import { toast } from "sonner";
 
@@ -74,20 +73,20 @@ const numberFieldOptions = {
 } as const;
 
 interface RecipeFormProps {
-  categories: RecipeCategory[];
-  customCategories?: CustomCategory[];
+  userCategories: UserCategoryView[];
   recipe?: RecipeWithDetails;
   mode?: "create" | "edit" | "variant";
   originalRecipeId?: string;
 }
 
 export function RecipeForm({
-  categories,
-  customCategories = [],
+  userCategories,
   recipe,
   mode = "create",
   originalRecipeId,
 }: RecipeFormProps) {
+  const defaultStandardCategoryId =
+    userCategories.find((cat) => cat.standardCategoryId)?.standardCategoryId ?? "";
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -108,7 +107,9 @@ export function RecipeForm({
   const defaultValues: RecipeFormValues = {
     title: recipe?.title || "",
     description: recipe?.description || "",
-    category_id: recipe?.custom_category_id ? undefined : recipe?.category_id || categories[0]?.id || "",
+    category_id: recipe?.custom_category_id
+      ? undefined
+      : recipe?.category_id || defaultStandardCategoryId,
     custom_category_id: recipe?.custom_category_id || undefined,
     servings: recipe?.servings || 4,
     cook_time_minutes: recipe?.cook_time_minutes || 30,
@@ -145,14 +146,12 @@ export function RecipeForm({
   } = useFieldArray({ control: form.control, name: "steps" });
 
   const categoryItems = useMemo(
-    () => [
-      ...categories.map((cat) => ({ value: `std:${cat.id}`, label: cat.name })),
-      ...customCategories.map((cat) => ({
-        value: `custom:${cat.id}`,
-        label: `${cat.name} (eigen)`,
+    () =>
+      userCategories.map((cat) => ({
+        value: cat.filterKey,
+        label: cat.isCustom ? `${cat.name} (eigen)` : cat.name,
       })),
-    ],
-    [categories, customCategories]
+    [userCategories]
   );
 
   const categoryId = form.watch("category_id");
@@ -166,15 +165,15 @@ export function RecipeForm({
     );
   const categoryValue = customCategoryId
     ? `custom:${customCategoryId}`
-    : categoryId || categories[0]?.id
-      ? `std:${categoryId || categories[0]?.id}`
+    : categoryId || defaultStandardCategoryId
+      ? `std:${categoryId || defaultStandardCategoryId}`
       : null;
 
   useEffect(() => {
-    if (!categoryId && !customCategoryId && categories[0]?.id) {
-      form.setValue("category_id", categories[0].id, { shouldValidate: true });
+    if (!categoryId && !customCategoryId && defaultStandardCategoryId) {
+      form.setValue("category_id", defaultStandardCategoryId, { shouldValidate: true });
     }
-  }, [categories, categoryId, customCategoryId, form]);
+  }, [defaultStandardCategoryId, categoryId, customCategoryId, form]);
 
   function handleCategoryChange(v: string | null) {
     if (!v) return;
@@ -195,7 +194,7 @@ export function RecipeForm({
     const customCategoryId = form.getValues("custom_category_id");
     const categoryId = customCategoryId
       ? undefined
-      : form.getValues("category_id") || categories[0]?.id || "";
+      : form.getValues("category_id") || defaultStandardCategoryId;
 
     form.reset({
       title: data.title,
@@ -446,14 +445,10 @@ export function RecipeForm({
                 <SelectValue placeholder="Kategorie wählen" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={`std:${cat.id}`}>
+                {userCategories.map((cat) => (
+                  <SelectItem key={cat.filterKey} value={cat.filterKey}>
                     {cat.name}
-                  </SelectItem>
-                ))}
-                {customCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={`custom:${cat.id}`}>
-                    {cat.name} (eigen)
+                    {cat.isCustom && " (eigen)"}
                   </SelectItem>
                 ))}
               </SelectContent>

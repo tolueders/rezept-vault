@@ -6,7 +6,7 @@ import {
   RecipeFilterChip,
   buildCategoryFilters,
 } from "@/components/recipes/recipe-filter-chips";
-import type { RecipeCategory } from "@/types/database";
+import type { UserCategoryView } from "@/types/database";
 import { cn } from "@/lib/utils";
 
 interface RecipeSearchFiltersProps {
@@ -14,7 +14,7 @@ interface RecipeSearchFiltersProps {
   onQueryChange: (query: string) => void;
   categoryFilter: string;
   onCategoryFilterChange: (filter: string) => void;
-  categories: RecipeCategory[];
+  categories: UserCategoryView[];
   hasActiveFilter: boolean;
   onClearFilters: () => void;
   searchPlaceholder?: string;

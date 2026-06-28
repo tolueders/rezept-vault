@@ -1,16 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { RecipeCategory } from "@/types/database";
+import type { UserCategoryView } from "@/types/database";
 
-export function buildCategoryFilters(categories: RecipeCategory[]) {
+export function buildCategoryFilters(categories: UserCategoryView[]) {
   return [
     { id: "all", label: "Alle", filter: "all", custom: false },
     ...categories.map((c) => ({
-      id: c.id,
+      id: c.filterKey,
       label: c.name,
-      filter: `std:${c.id}`,
-      custom: false,
+      filter: c.filterKey,
+      custom: c.isCustom,
     })),
   ];
 }

@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { applyUserCategoryDisplayNames } from "@/lib/category-utils";
+import { getUserCategories } from "@/lib/queries/categories";
 import type { Recipe, RecipeWithDetails } from "@/types/database";
 import { RECIPES_PER_PAGE } from "@/lib/constants";
 
@@ -50,7 +52,7 @@ export async function getRecipeById(id: string): Promise<RecipeWithDetails | nul
     user_rating = rating?.rating ?? null;
   }
 
-  return {
+  const result = {
     ...recipe,
     tags: recipe.tags?.sort((a: { tag: string }, b: { tag: string }) =>
       a.tag.localeCompare(b.tag)
@@ -68,6 +70,13 @@ export async function getRecipeById(id: string): Promise<RecipeWithDetails | nul
     is_favorited,
     user_rating,
   } as RecipeWithDetails;
+
+  if (user && recipe.user_id === user.id) {
+    const userCategories = await getUserCategories();
+    return applyUserCategoryDisplayNames([result], userCategories)[0];
+  }
+
+  return result;
 }
 
 export async function getUserRecipeCopyId(
@@ -149,7 +158,11 @@ export async function getUserRecipes(
   }
 
   const { data, count } = await query;
-  return { recipes: data || [], total: count || 0 };
+  const userCategories = await getUserCategories();
+  return {
+    recipes: applyUserCategoryDisplayNames(data || [], userCategories),
+    total: count || 0,
+  };
 }
 
 export async function searchRecipes(query: string, categoryFilter?: string) {
@@ -158,6 +171,8 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return [];
+
+  const userCategories = await getUserCategories();
 
   function applyCategoryFilter<T extends { category_id: string | null; custom_category_id: string | null }>(
     items: T[]
@@ -199,7 +214,7 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
       .limit(50);
     q = applyCategoryToQuery(q);
     const { data } = await q;
-    return data || [];
+    return applyUserCategoryDisplayNames(applyCategoryFilter(data || []), userCategories);
   }
 
   const { data: recipes } = await supabase
@@ -237,7 +252,7 @@ export async function searchRecipes(query: string, categoryFilter?: string) {
   const combined = [...(recipes || []), ...extraRecipes];
   const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values());
 
-  return applyCategoryFilter(unique);
+  return applyUserCategoryDisplayNames(applyCategoryFilter(unique), userCategories);
 }
 
 export async function searchFavoriteRecipes(query: string, categoryFilter?: string) {
@@ -246,6 +261,8 @@ export async function searchFavoriteRecipes(query: string, categoryFilter?: stri
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return [];
+
+  const userCategories = await getUserCategories();
 
   const { data: favRows } = await supabase
     .from("recipe_favorites")
@@ -347,7 +364,7 @@ export async function searchFavoriteRecipes(query: string, categoryFilter?: stri
     (a, b) => (favoriteOrder.get(a.id) ?? 0) - (favoriteOrder.get(b.id) ?? 0)
   );
 
-  return results;
+  return applyUserCategoryDisplayNames(results, userCategories);
 }
 
 export async function getPublicRecipes(
@@ -509,7 +526,8 @@ export async function getFavoriteRecipes(): Promise<
     }
   }
 
-  return recipes;
+  const userCategories = await getUserCategories();
+  return applyUserCategoryDisplayNames(recipes, userCategories);
 }
 
 export async function getRecipeComments(recipeId: string) {

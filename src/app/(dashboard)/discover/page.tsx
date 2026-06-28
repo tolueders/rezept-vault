@@ -1,5 +1,6 @@
 import { DiscoverHomeView } from "@/components/recipes/discover-home-view";
 import { getPublicRecipes, getCategories } from "@/lib/queries/recipes";
+import { standardCategoriesToUserViews } from "@/lib/category-utils";
 
 export const metadata = { title: "Entdecken" };
 
@@ -12,7 +13,7 @@ export default async function DiscoverPage() {
   return (
     <DiscoverHomeView
       initialRecipes={recipes}
-      categories={categories}
+      categories={standardCategoriesToUserViews(categories)}
       totalCount={total}
     />
   );

@@ -1,14 +1,10 @@
 import { RecipeForm } from "@/components/recipes/recipe-form";
-import { getCategories } from "@/lib/queries/recipes";
-import { getCustomCategories } from "@/lib/queries/categories";
+import { getUserCategories } from "@/lib/queries/categories";
 
 export const metadata = { title: "Neues Rezept" };
 
 export default async function NewRecipePage() {
-  const [categories, customCategories] = await Promise.all([
-    getCategories(),
-    getCustomCategories(),
-  ]);
+  const userCategories = await getUserCategories();
 
   return (
     <div>
@@ -18,7 +14,7 @@ export default async function NewRecipePage() {
           Manuell anlegen, Text einfügen, per Foto digitalisieren oder von einer Webseite importieren.
         </p>
       </header>
-      <RecipeForm categories={categories} customCategories={customCategories} />
+      <RecipeForm userCategories={userCategories} />
     </div>
   );
 }

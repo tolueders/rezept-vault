@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { RecipeForm } from "@/components/recipes/recipe-form";
-import { getRecipeById, getCategories } from "@/lib/queries/recipes";
-import { getCustomCategories } from "@/lib/queries/categories";
+import { getRecipeById } from "@/lib/queries/recipes";
+import { getUserCategories } from "@/lib/queries/categories";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Rezept bearbeiten" };
@@ -17,10 +17,9 @@ export default async function EditRecipePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [recipe, categories, customCategories] = await Promise.all([
+  const [recipe, userCategories] = await Promise.all([
     getRecipeById(id),
-    getCategories(),
-    getCustomCategories(),
+    getUserCategories(),
   ]);
 
   if (!recipe || recipe.user_id !== user?.id) notFound();
@@ -28,12 +27,7 @@ export default async function EditRecipePage({
   return (
     <div>
       <h1 className="mb-8 text-2xl font-bold">Rezept bearbeiten</h1>
-      <RecipeForm
-        categories={categories}
-        customCategories={customCategories}
-        recipe={recipe}
-        mode="edit"
-      />
+      <RecipeForm userCategories={userCategories} recipe={recipe} mode="edit" />
     </div>
   );
 }
