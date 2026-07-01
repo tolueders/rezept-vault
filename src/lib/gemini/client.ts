@@ -11,7 +11,11 @@ const RECIPE_JSON_SCHEMA: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     title: { type: SchemaType.STRING },
-    description: { type: SchemaType.STRING },
+    description: {
+      type: SchemaType.STRING,
+      description:
+        "Kurze Einleitung oder Beschreibung des Gerichts, wörtlich aus der Quelle. Leerer String wenn keine vorhanden.",
+    },
     servings: { type: SchemaType.NUMBER },
     cook_time_minutes: { type: SchemaType.NUMBER },
     difficulty: {
@@ -21,6 +25,7 @@ const RECIPE_JSON_SCHEMA: Schema = {
     },
     ingredients: {
       type: SchemaType.ARRAY,
+      description: "Alle Zutaten mit exakten Mengen.",
       items: {
         type: SchemaType.OBJECT,
         properties: {
@@ -33,6 +38,8 @@ const RECIPE_JSON_SCHEMA: Schema = {
     },
     steps: {
       type: SchemaType.ARRAY,
+      description:
+        "Alle Zubereitungsschritte vollständig und wörtlich, ein Schritt pro Eintrag.",
       items: {
         type: SchemaType.OBJECT,
         properties: {
@@ -42,7 +49,7 @@ const RECIPE_JSON_SCHEMA: Schema = {
       },
     },
   },
-  required: ["title", "servings", "ingredients", "steps"],
+  required: ["title", "description", "servings", "ingredients", "steps"],
 };
 
 export function getGeminiModel() {

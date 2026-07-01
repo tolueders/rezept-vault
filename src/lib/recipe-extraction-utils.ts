@@ -21,6 +21,65 @@ function normalizeDifficulty(value: unknown): DifficultyLevel {
     : "mittel";
 }
 
+function tryParseContextJson(contextText?: string): Record<string, unknown> | null {
+  if (!contextText?.trim().startsWith("{")) return null;
+  try {
+    return JSON.parse(contextText) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function inferDescriptionFromContext(
+  contextText?: string,
+  parsed?: Record<string, unknown> | null
+): string {
+  const context = parsed ?? tryParseContextJson(contextText);
+  if (context && typeof context.description === "string") {
+    return context.description.trim();
+  }
+
+  if (!contextText?.trim()) return "";
+
+  const introMatch = contextText.match(/^([\s\S]*?)(?=\b(zutaten|ingredients)\b)/i);
+  const intro = introMatch?.[1]?.trim() ?? "";
+  if (intro.length < 20) return "";
+  return intro.length > 1500 ? intro.slice(0, 1500).trim() : intro;
+}
+
+function inferStepsFromContext(
+  contextText?: string,
+  parsed?: Record<string, unknown> | null
+): { instruction: string }[] {
+  const context = parsed ?? tryParseContextJson(contextText);
+  if (!context || !Array.isArray(context.steps)) return [];
+
+  return context.steps
+    .map((step) => ({
+      instruction: String(step ?? "").trim(),
+    }))
+    .filter((step) => step.instruction.length > 0);
+}
+
+function normalizeSteps(
+  steps: Partial<GeminiRecipeExtraction>["steps"],
+  contextText?: string,
+  parsed?: Record<string, unknown> | null
+) {
+  const normalized = (steps ?? [])
+    .map((step) => ({
+      instruction: String(step?.instruction ?? "").trim(),
+    }))
+    .filter((step) => step.instruction.length > 0);
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  const fromContext = inferStepsFromContext(contextText, parsed);
+  return fromContext.length > 0 ? fromContext : [{ instruction: "" }];
+}
+
 /** Liest eine Portionenzahl aus Zahlen, Strings oder Bereichen (z. B. „4–6“). */
 export function parseServingsValue(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -106,6 +165,7 @@ export function normalizeRecipeExtraction(
   data: Partial<GeminiRecipeExtraction>,
   contextText?: string
 ): GeminiRecipeExtraction {
+  const contextJson = tryParseContextJson(contextText);
   const ingredients = (data.ingredients ?? [])
     .map((ingredient) => ({
       name: String(ingredient.name ?? "").trim(),
@@ -114,19 +174,18 @@ export function normalizeRecipeExtraction(
     }))
     .filter((ingredient) => ingredient.name.length > 0);
 
-  const steps = (data.steps ?? [])
-    .map((step) => ({
-      instruction: String(step.instruction ?? "").trim(),
-    }))
-    .filter((step) => step.instruction.length > 0);
+  const description =
+    String(data.description ?? "").trim() ||
+    inferDescriptionFromContext(contextText, contextJson);
+  const steps = normalizeSteps(data.steps, contextText, contextJson);
 
   return {
     title: String(data.title ?? "").trim() || "Unbenanntes Rezept",
-    description: String(data.description ?? "").trim(),
+    description,
     servings: resolveRecipeServings(data, contextText),
     cook_time_minutes: Math.max(0, toNumber(data.cook_time_minutes, 30)),
     difficulty: normalizeDifficulty(data.difficulty),
     ingredients: ingredients.length > 0 ? ingredients : [{ name: "", amount: 0, unit: "" }],
-    steps: steps.length > 0 ? steps : [{ instruction: "" }],
+    steps,
   };
 }

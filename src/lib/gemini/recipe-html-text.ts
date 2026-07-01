@@ -1,12 +1,12 @@
 import { MAX_RECIPE_TEXT_LENGTH } from "@/lib/gemini/prompts";
 
-const RECIPE_SECTION_KEYWORDS = [
-  "zutaten",
-  "ingredients",
+const INGREDIENT_KEYWORDS = ["zutaten", "ingredients"];
+const INSTRUCTION_KEYWORDS = [
   "zubereitung",
   "anleitung",
   "directions",
   "instructions",
+  "schritt",
 ];
 
 function decodeHtmlEntities(html: string): string {
@@ -25,6 +25,9 @@ function stripHtml(html: string): string {
     html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<\/li>/gi, "\n")
       .replace(/<[^>]+>/g, " ")
   );
 }
@@ -81,6 +84,20 @@ function flattenInstructions(value: unknown): string[] {
   });
 }
 
+function findFirstKeywordIndex(text: string, keywords: string[]): number {
+  const lower = text.toLowerCase();
+  let index = -1;
+
+  for (const keyword of keywords) {
+    const match = lower.indexOf(keyword);
+    if (match !== -1 && (index === -1 || match < index)) {
+      index = match;
+    }
+  }
+
+  return index;
+}
+
 function extractJsonLdRecipeSnippet(html: string): string | null {
   const pattern =
     /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -99,8 +116,8 @@ function extractJsonLdRecipeSnippet(html: string): string | null {
           title: recipe.name,
           description:
             typeof recipe.description === "string"
-              ? recipe.description.slice(0, 280)
-              : undefined,
+              ? recipe.description.slice(0, 1200)
+              : "",
           servings: recipe.recipeYield,
           cook_time_minutes: recipe.totalTime ?? recipe.cookTime,
           ingredients: recipe.recipeIngredient,
@@ -121,18 +138,23 @@ function extractJsonLdRecipeSnippet(html: string): string | null {
 }
 
 function focusRecipeSection(text: string): string | null {
-  const lower = text.toLowerCase();
-  let start = -1;
+  const ingredientIndex = findFirstKeywordIndex(text, INGREDIENT_KEYWORDS);
+  const instructionIndex = findFirstKeywordIndex(text, INSTRUCTION_KEYWORDS);
 
-  for (const keyword of RECIPE_SECTION_KEYWORDS) {
-    const index = lower.indexOf(keyword);
-    if (index !== -1 && (start === -1 || index < start)) {
-      start = index;
-    }
+  if (ingredientIndex === -1 && instructionIndex === -1) {
+    return null;
   }
 
-  if (start === -1) return null;
-  return text.slice(Math.max(0, start - 120), start + MAX_RECIPE_TEXT_LENGTH);
+  const start = Math.max(
+    0,
+    (ingredientIndex === -1 ? instructionIndex : ingredientIndex) - 800
+  );
+  const end =
+    instructionIndex === -1
+      ? Math.min(text.length, start + MAX_RECIPE_TEXT_LENGTH)
+      : Math.min(text.length, instructionIndex + MAX_RECIPE_TEXT_LENGTH);
+
+  return text.slice(start, end).trim();
 }
 
 /** Liefert möglichst wenig, aber rezeptrelevanten Text für Gemini. */
