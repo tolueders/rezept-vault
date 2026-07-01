@@ -3,7 +3,8 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RecipesHomeView } from "@/components/recipes/recipes-home-view";
 import { RecipeSearch } from "@/components/recipes/recipe-search";
-import { getUserRecipes, getCategories } from "@/lib/queries/recipes";
+import { getUserRecipes } from "@/lib/queries/recipes";
+import { getUserCategories } from "@/lib/queries/categories";
 import { getDashboardStats } from "@/lib/queries/dashboard";
 import { RECIPES_PER_PAGE } from "@/lib/constants";
 
@@ -18,7 +19,7 @@ export default async function RecipesPage({
   const page = Number(params.page) || 1;
   const [{ recipes, total }, categories, stats] = await Promise.all([
     getUserRecipes(page),
-    getCategories(),
+    getUserCategories(),
     getDashboardStats(),
   ]);
 

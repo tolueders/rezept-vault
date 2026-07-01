@@ -229,17 +229,23 @@ export async function deleteRecipe(id: string) {
 }
 
 export async function publishRecipe(id: string) {
+  return updateRecipeVisibility(id, true);
+}
+
+export async function updateRecipeVisibility(id: string, isPublic: boolean) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht autorisiert");
 
-  await assertRecipeCanBePublished(id, user.id);
+  if (isPublic) {
+    await assertRecipeCanBePublished(id, user.id);
+  }
 
   const { data: recipe, error } = await supabase
     .from("recipes")
-    .update({ is_public: true })
+    .update({ is_public: isPublic })
     .eq("id", id)
     .eq("user_id", user.id)
     .select("slug")
@@ -476,7 +482,7 @@ export async function createVariant(
       servings: recipeData.servings,
       cook_time_minutes: recipeData.cook_time_minutes,
       difficulty: recipeData.difficulty,
-      is_public: false,
+      is_public: recipeData.is_public,
       original_recipe_id: originalRecipeId,
       is_variant: true,
     })
@@ -518,25 +524,28 @@ export async function createVariant(
   return variant;
 }
 
-export async function searchRecipesAction(query: string, categoryId?: string) {
+export async function searchRecipesAction(
+  query: string,
+  categoryFilters?: string[]
+) {
   const { searchRecipes } = await import("@/lib/queries/recipes");
-  return searchRecipes(query, categoryId);
+  return searchRecipes(query, categoryFilters);
 }
 
 export async function searchFavoriteRecipesAction(
   query: string,
-  categoryId?: string
+  categoryFilters?: string[]
 ) {
   const { searchFavoriteRecipes } = await import("@/lib/queries/recipes");
-  return searchFavoriteRecipes(query, categoryId);
+  return searchFavoriteRecipes(query, categoryFilters);
 }
 
 export async function searchPublicRecipesAction(
   query: string,
-  categoryId?: string
+  categoryFilters?: string[]
 ) {
   const { searchPublicRecipes } = await import("@/lib/queries/recipes");
-  return searchPublicRecipes(query, categoryId);
+  return searchPublicRecipes(query, categoryFilters);
 }
 
 export async function setPreferredVariant(variantId: string, originalId: string) {

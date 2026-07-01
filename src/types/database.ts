@@ -24,6 +24,27 @@ export interface CustomCategory {
   slug: string;
 }
 
+export interface UserCategoryOverride {
+  id: string;
+  user_id: string;
+  recipe_category_id: string;
+  name: string;
+}
+
+/** Vereinheitlichte Kategorie-Ansicht (Standard + eigen) für Filter & Profil */
+export interface UserCategoryView {
+  filterKey: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+  isCustom: boolean;
+  canDelete: boolean;
+  recipeCount: number;
+  standardCategoryId?: string;
+  customCategoryId?: string;
+  defaultName?: string;
+}
+
 export interface Recipe {
   id: string;
   user_id: string;
@@ -173,6 +194,6 @@ export interface GeminiRecipeExtraction {
 
 export interface SearchFilters {
   query: string;
-  category?: string;
+  categories?: string[];
   tags?: string[];
 }
