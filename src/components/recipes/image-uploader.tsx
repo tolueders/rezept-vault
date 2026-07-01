@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ImageCropDialog } from "@/components/recipes/image-crop-dialog";
 import { compressImage } from "@/lib/image-utils";
 
 interface ImageUploaderProps {
@@ -13,26 +11,17 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploaderProps) {
-  const [cropOpen, setCropOpen] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const compressed = await compressImage(file);
-    const url = URL.createObjectURL(compressed);
-    setImageSrc(url);
-    setCropOpen(true);
-    e.target.value = "";
-  }
 
-  async function handleCropConfirm(blob: Blob) {
-    const file = new File([blob], "recipe.webp", { type: "image/webp" });
-    const previewUrl = URL.createObjectURL(blob);
-    onImageReady(file, previewUrl);
-    setCropOpen(false);
-    if (imageSrc) URL.revokeObjectURL(imageSrc);
-    setImageSrc(null);
+    try {
+      const compressed = await compressImage(file);
+      const previewUrl = URL.createObjectURL(compressed);
+      onImageReady(compressed, previewUrl);
+    } finally {
+      e.target.value = "";
+    }
   }
 
   return (
@@ -72,20 +61,6 @@ export function ImageUploader({ preview, onImageReady, onRemove }: ImageUploader
           />
         </label>
       )}
-
-      <ImageCropDialog
-        open={cropOpen}
-        onOpenChange={(open) => {
-          setCropOpen(open);
-          if (!open && imageSrc) {
-            URL.revokeObjectURL(imageSrc);
-            setImageSrc(null);
-          }
-        }}
-        imageSrc={imageSrc}
-        aspect={16 / 9}
-        onConfirm={handleCropConfirm}
-      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { getWeekStart, mergeShoppingIngredients } from "@/lib/recipe-utils";
 import { entryDateFromPlan } from "@/lib/shopping-utils";
 import { ensureShoppingLists } from "@/lib/queries/shopping-lists";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { format, parseISO, startOfDay } from "date-fns";
 
 async function requireUser() {
@@ -12,7 +13,7 @@ async function requireUser() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Nicht autorisiert");
+  if (!user) redirect("/login");
   return { supabase, user };
 }
 

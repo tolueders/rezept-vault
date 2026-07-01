@@ -152,7 +152,7 @@ export function RecipePhotoScanner({
           <h3 className="text-base font-semibold">Rezept fotografieren</h3>
           <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             Bis zu {MAX_RECIPE_SCAN_PHOTOS} Fotos — z. B. Titelseite, Zutaten und
-            Zubereitung. Jedes Bild kann vorher zugeschnitten werden.
+            Zubereitung. Pro Foto kannst du den Ausschnitt frei wählen.
           </p>
         </div>
       )}
@@ -226,8 +226,8 @@ export function RecipePhotoScanner({
           }
         }}
         imageSrc={imageSrc}
-        aspect={4 / 3}
-        title="Rezeptfoto zuschneiden"
+        flexible
+        title="Rezeptbereich auswählen"
         onConfirm={handleCropConfirm}
       />
     </div>
