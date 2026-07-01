@@ -5,17 +5,16 @@ import { Input } from "@/components/ui/input";
 import {
   RecipeFilterChip,
   buildCategoryFilters,
-  toggleCategoryFilterSelection,
 } from "@/components/recipes/recipe-filter-chips";
-import type { UserCategoryView } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 import { cn } from "@/lib/utils";
 
 interface RecipeSearchFiltersProps {
   query: string;
   onQueryChange: (query: string) => void;
-  categoryFilters: string[];
-  onCategoryFiltersChange: (filters: string[]) => void;
-  categories: UserCategoryView[];
+  categoryFilter: string;
+  onCategoryFilterChange: (filter: string) => void;
+  categories: RecipeCategory[];
   hasActiveFilter: boolean;
   onClearFilters: () => void;
   searchPlaceholder?: string;
@@ -27,8 +26,8 @@ interface RecipeSearchFiltersProps {
 export function RecipeSearchFilters({
   query,
   onQueryChange,
-  categoryFilters,
-  onCategoryFiltersChange,
+  categoryFilter,
+  onCategoryFilterChange,
   categories,
   hasActiveFilter,
   onClearFilters,
@@ -38,12 +37,6 @@ export function RecipeSearchFilters({
   topSlot,
 }: RecipeSearchFiltersProps) {
   const allCategories = buildCategoryFilters(categories);
-
-  function handleCategoryToggle(filterKey: string) {
-    onCategoryFiltersChange(
-      toggleCategoryFilterSelection(categoryFilters, filterKey)
-    );
-  }
 
   return (
     <section
@@ -84,19 +77,15 @@ export function RecipeSearchFilters({
 
       <div className="border-t border-border/40 px-4 pb-4 pt-3 md:px-6 md:pb-5">
         <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Kategorien
+          Kategorie filtern
         </p>
         <div className="filter-scroll-wrap -mx-1">
           <div className="filter-scroll">
             {allCategories.map((cat) => (
               <RecipeFilterChip
                 key={cat.id}
-                active={
-                  cat.filter === "all"
-                    ? categoryFilters.length === 0
-                    : categoryFilters.includes(cat.filter)
-                }
-                onClick={() => handleCategoryToggle(cat.filter)}
+                active={categoryFilter === cat.filter}
+                onClick={() => onCategoryFilterChange(cat.filter)}
                 variant={cat.custom ? "custom" : "default"}
               >
                 {cat.label}

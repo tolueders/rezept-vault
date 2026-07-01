@@ -5,10 +5,10 @@ import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters"
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { searchRecipesAction } from "@/lib/actions/recipes";
-import type { UserCategoryView } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 
 interface RecipeSearchProps {
-  categories: UserCategoryView[];
+  categories: RecipeCategory[];
   initialRecipes?: Parameters<typeof RecipeCard>[0]["recipe"][];
 }
 
@@ -17,18 +17,18 @@ export function RecipeSearch({
   initialRecipes = [],
 }: RecipeSearchProps) {
   const [query, setQuery] = useState("");
-  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [results, setResults] = useState(initialRecipes);
   const [loading, setLoading] = useState(false);
 
-  const hasActiveFilter = query.length > 0 || categoryFilters.length > 0;
+  const hasActiveFilter = query.length > 0 || categoryFilter !== "all";
 
-  const doSearch = useCallback(async (q: string, filters: string[]) => {
+  const doSearch = useCallback(async (q: string, cat: string) => {
     setLoading(true);
     try {
       const data = await searchRecipesAction(
         q,
-        filters.length > 0 ? filters : undefined
+        cat === "all" ? undefined : cat
       );
       setResults(data);
     } finally {
@@ -38,14 +38,14 @@ export function RecipeSearch({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      doSearch(query, categoryFilters);
+      doSearch(query, categoryFilter);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, categoryFilters, doSearch]);
+  }, [query, categoryFilter, doSearch]);
 
   function clearFilters() {
     setQuery("");
-    setCategoryFilters([]);
+    setCategoryFilter("all");
   }
 
   return (
@@ -53,8 +53,8 @@ export function RecipeSearch({
       <RecipeSearchFilters
         query={query}
         onQueryChange={setQuery}
-        categoryFilters={categoryFilters}
-        onCategoryFiltersChange={setCategoryFilters}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
         categories={categories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}

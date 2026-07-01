@@ -12,14 +12,14 @@ import { RecipeSearchFilters } from "@/components/recipes/recipe-search-filters"
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { searchRecipesAction } from "@/lib/actions/recipes";
-import type { UserCategoryView } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 import { ScrollToTopButton } from "@/components/layout/scroll-to-top-button";
 
 type RecipeItem = Parameters<typeof RecipeCard>[0]["recipe"];
 
 interface RecipesHomeViewProps {
   initialRecipes: RecipeItem[];
-  categories: UserCategoryView[];
+  categories: RecipeCategory[];
   stats?: {
     displayName: string;
     recipeCount: number;
@@ -35,18 +35,18 @@ export function RecipesHomeView({
   stats,
 }: RecipesHomeViewProps) {
   const [query, setQuery] = useState("");
-  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [results, setResults] = useState(initialRecipes);
   const [loading, setLoading] = useState(false);
 
-  const hasActiveFilter = query.length > 0 || categoryFilters.length > 0;
+  const hasActiveFilter = query.length > 0 || categoryFilter !== "all";
 
-  const doSearch = useCallback(async (q: string, filters: string[]) => {
+  const doSearch = useCallback(async (q: string, cat: string) => {
     setLoading(true);
     try {
       const data = await searchRecipesAction(
         q,
-        filters.length > 0 ? filters : undefined
+        cat === "all" ? undefined : cat
       );
       setResults(data);
     } finally {
@@ -56,14 +56,14 @@ export function RecipesHomeView({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      doSearch(query, categoryFilters);
+      doSearch(query, categoryFilter);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, categoryFilters, doSearch]);
+  }, [query, categoryFilter, doSearch]);
 
   function clearFilters() {
     setQuery("");
-    setCategoryFilters([]);
+    setCategoryFilter("all");
   }
 
   const quickLinks = stats
@@ -122,8 +122,8 @@ export function RecipesHomeView({
       <RecipeSearchFilters
         query={query}
         onQueryChange={setQuery}
-        categoryFilters={categoryFilters}
-        onCategoryFiltersChange={setCategoryFilters}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
         categories={categories}
         hasActiveFilter={hasActiveFilter}
         onClearFilters={clearFilters}
@@ -143,7 +143,7 @@ export function RecipesHomeView({
           </p>
           <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {hasActiveFilter
-              ? "Probiere andere Suchbegriffe oder passe die Kategorien an."
+              ? "Probiere andere Suchbegriffe oder wähle 'Alle' in den Kategorien."
               : "Tippe unten rechts auf + und lege dein erstes Rezept an."}
           </p>
         </div>

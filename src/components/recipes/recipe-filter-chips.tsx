@@ -1,28 +1,18 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { UserCategoryView } from "@/types/database";
+import type { RecipeCategory } from "@/types/database";
 
-export function buildCategoryFilters(categories: UserCategoryView[]) {
+export function buildCategoryFilters(categories: RecipeCategory[]) {
   return [
     { id: "all", label: "Alle", filter: "all", custom: false },
     ...categories.map((c) => ({
-      id: c.filterKey,
+      id: c.id,
       label: c.name,
-      filter: c.filterKey,
-      custom: c.isCustom,
+      filter: `std:${c.id}`,
+      custom: false,
     })),
   ];
-}
-
-export function toggleCategoryFilterSelection(
-  selected: string[],
-  filterKey: string
-): string[] {
-  if (filterKey === "all") return [];
-  return selected.includes(filterKey)
-    ? selected.filter((filter) => filter !== filterKey)
-    : [...selected, filterKey];
 }
 
 export function RecipeFilterChip({

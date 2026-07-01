@@ -14,11 +14,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { profileSchema, type ProfileFormValues } from "@/lib/validations/auth";
 import { updateProfile, uploadAvatar } from "@/lib/actions/profile";
-import { CategoriesSection } from "@/components/profile/categories-section";
+import { CustomCategoriesSection } from "@/components/profile/custom-categories-section";
 import { ChangePasswordSection } from "@/components/profile/change-password-section";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import type { Profile, UserCategoryView } from "@/types/database";
+import type { CustomCategory, Profile } from "@/types/database";
 
 const RecipePdfExportButton = dynamic(
   () =>
@@ -36,10 +36,10 @@ const RecipePdfExportButton = dynamic(
 interface ProfileViewProps {
   profile: Profile;
   email: string;
-  userCategories: UserCategoryView[];
+  customCategories: CustomCategory[];
 }
 
-export function ProfileView({ profile, email, userCategories }: ProfileViewProps) {
+export function ProfileView({ profile, email, customCategories }: ProfileViewProps) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const {
@@ -167,7 +167,7 @@ export function ProfileView({ profile, email, userCategories }: ProfileViewProps
         </CardContent>
       </Card>
 
-      <CategoriesSection categories={userCategories} />
+      <CustomCategoriesSection categories={customCategories} />
 
       <RecipePdfExportButton userName={profile.display_name || "Rezeptsammler"} />
 

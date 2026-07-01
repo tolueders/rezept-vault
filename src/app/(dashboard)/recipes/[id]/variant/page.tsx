@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { RecipeForm } from "@/components/recipes/recipe-form";
-import { getRecipeById } from "@/lib/queries/recipes";
-import { getUserCategories } from "@/lib/queries/categories";
+import { getRecipeById, getCategories } from "@/lib/queries/recipes";
+import { getCustomCategories } from "@/lib/queries/categories";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Variante erstellen" };
@@ -17,9 +17,10 @@ export default async function VariantRecipePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [recipe, userCategories] = await Promise.all([
+  const [recipe, categories, customCategories] = await Promise.all([
     getRecipeById(id),
-    getUserCategories(),
+    getCategories(),
+    getCustomCategories(),
   ]);
 
   if (!recipe || recipe.user_id !== user?.id) notFound();
@@ -36,7 +37,8 @@ export default async function VariantRecipePage({
         Basierend auf: {recipe.title}
       </p>
       <RecipeForm
-        userCategories={userCategories}
+        categories={categories}
+        customCategories={customCategories}
         recipe={variantRecipe}
         mode="variant"
         originalRecipeId={id}
